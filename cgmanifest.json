@@ -1,0 +1,37 @@
+{
+    "Registrations":[
+        {
+            "Component": {
+                "Type": "git",
+                "git": {
+                    "RepositoryUrl": "https://github.com/iovisor/bcc.git",
+                    "CommitHash": "ebf0e4b2fd7190e747638f68a4421a8b653bc0a2"
+                }
+            },
+            "DevelopmentDependency" : true
+        },
+
+        {
+            "Component": {
+                "Type": "git",
+                "git": {
+                    "RepositoryUrl": "https://github.com/amrayn/easyloggingpp",
+                    "CommitHash": "163a8e538e4f9878f86d1b4c8887f5135d119d30"
+                }
+            },
+            "DevelopmentDependency" : true
+        },
+
+        {
+            "Component": {
+                "Type": "other",
+                "Other": {
+                    "Name": "sqlite",
+                    "Version": "3.27.2",
+                    "DownloadUrl": "https://www.sqlite.org/2019/sqlite-autoconf-3270200.tar.gz"
+                }
+            },
+            "DevelopmentDependency" : true
+        }        
+    ]
+}

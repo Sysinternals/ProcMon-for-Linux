@@ -1,0 +1,57 @@
+# Azure build pipelines for Procdump-for-Linux
+
+trigger:
+    branches:
+      include:
+        - release/*
+        - master
+      exclude:
+        - dev/*
+        - test/*
+  
+pr:
+- master
+
+jobs:
+  - job: "Build_Procmon"
+    pool: "Procmon-Ubuntu-Pool"
+    steps:
+    - script: |
+        mkdir build && cd build
+        cmake ..
+        make
+      displayName: "Build Procmon Binary"
+  
+  - job: "DEB_PACKAGE_BUILD"
+    pool: "Procmon-Ubuntu-Pool"
+    condition: not(eq(variables['Build.Reason'], 'PullRequest'))
+    dependsOn:
+      - "Build_Procmon"
+    steps:
+    - script: |
+        export REVISION=$(Build.BuildId)
+        sed -i "s/999999/$REVISION/g" $(Build.SourcesDirectory)/CMakeLists.txt
+        mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
+        cmake ..
+        make
+      displayName: "Build Procmon Binary"
+    
+    - script: |
+        mkdir $(Build.SourcesDirectory)/pkgbuild
+        cd $(Build.SourcesDirectory)/build
+        cpack ..
+        mv *.deb $(Build.SourcesDirectory)/pkgbuild
+      displayName: "Build DEB Package"
+    
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      displayName: 'Copy build artifacts to staging'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
