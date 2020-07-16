@@ -4,13 +4,13 @@ trigger:
     branches:
       include:
         - release/*
-        - master
+        - main
       exclude:
         - dev/*
         - test/*
   
 pr:
-- master
+- main
 
 jobs:
   - job: "Build_Procmon"
