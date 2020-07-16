@@ -91,7 +91,6 @@ std::string EventFormatter::DecodeArguments(ITelemetry event)
     std::vector<struct SyscallSchema::SyscallSchema>& schema = config->GetSchema();
 
     // Find the schema item
-    // TODO: We have to be smarted how we store the Syscall schema. Rather than a vector of SyscallSchema entries key off of the syscall ID for faster lookup. 
     int index = FindSyscall(event.syscall);
     SyscallSchema::SyscallSchema item = schema[index];
 
@@ -175,9 +174,6 @@ std::string EventFormatter::DecodeArguments(ITelemetry event)
 
         args+="  ";
     }
-    
-    // Once we complete the decoding of the arguments we can free the source buffer
-    // free(lineData.arguments); <--- I am going to leave this line here for a later conversation point with Mario
 
     // now that we have the argument string for detail view we need to santize it for ASCII control characters
     for(int i = 0; i < args.length(); i++)

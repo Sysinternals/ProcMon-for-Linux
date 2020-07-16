@@ -27,7 +27,6 @@ public:
     ITracerEngine() {};
     ITracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents) : _storageEngine(storageEngine) { _targetEvents = targetEvents; };
     virtual ~ITracerEngine() {};
-    // TODO: what does every tracer need to have?
 
     virtual void AddEvent(Event eventToTrace) {};
     virtual void AddEvent(std::vector<Event> eventsToTrace) {};

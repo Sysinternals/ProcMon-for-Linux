@@ -2,8 +2,8 @@ cmake_minimum_required (VERSION 3.13)
 project (procmon)
 
 # Set the project version number.
-set (procmon_VERSION_MAJOR 0)
-set (procmon_VERSION_MINOR 1)
+set (procmon_VERSION_MAJOR 1)
+set (procmon_VERSION_MINOR 0)
 set (procmon_VERSION_PATCH 0)
 
 # make ncurses a requirement
@@ -108,7 +108,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "${procmon_VERSION_PATCH}")
 set(AZDO_BUILD_ID "999999")
 
 # setup license and readme for package
-SET(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE.txt)
+SET(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE)
 SET(CPACK_RESOURCE_FILE_README ${PROJECT_SOURCE_DIR}/README.md)
 
 # setup CPACK RPM Variables

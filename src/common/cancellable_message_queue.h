@@ -21,12 +21,11 @@ class CancellableMessageQueue
     std::mutex              writeLock;
     std::mutex              readLock;
     std::condition_variable readCondition;
-    // TODO: should this be atomic?
     std::atomic<bool> cancelled = false;
 
     std::queue<T> leftQueue;
     std::queue<T> rightQueue;
-    // TODO: Should these be atomic pointers instead?
+
     std::queue<T> *currentWriteQueue = &leftQueue;
     std::queue<T> *currentReadQueue = &rightQueue;
 

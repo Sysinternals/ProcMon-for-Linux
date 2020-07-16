@@ -27,7 +27,6 @@ static std::vector<pid_t> pidRange(pid_t start, pid_t end)
 
 static bool telemetryMatches(ITelemetry first, ITelemetry second)
 {
-    // Todo(Jon): Need to add something for stack trace parameter once that becomes clear.
     return first.comm == second.comm && first.syscall == second.syscall &&
     first.pid == second.pid && first.processName == second.processName;
 }

@@ -47,7 +47,6 @@ void Column::addLine(std::string value)
     this->currentLine++;
 }
 
-// TODO account for resizing columns by users i.e. use x param
 int Column::resize(int height, int width, int x)
 {
     this->height = height;
@@ -96,7 +95,6 @@ void Column::redrawColumn()
     }
 }
 
-// TODO: implement move logic once click support is implimented
 void Column::moveColumn(int x)
 {
     this->x = x;

@@ -9,11 +9,6 @@
 #include <ncurses.h>
 #include <math.h>
 
-/*
-* TODO:
-* - manage import/export current screen config
-* - default color management setup
-*/
 class ScreenConfiguration
 {
     public:

@@ -12,9 +12,6 @@
 #include <thread>
 #include <set>
 
-// TODO setup color theme management
-// TODO utilize column map to allow more easy customizability of visible columns
-
 Screen::Screen()
 {
     totalLines = 0;
@@ -46,8 +43,7 @@ void Screen::InitializeFormatters()
 void Screen::initScreen(std::shared_ptr<ProcmonConfiguration> config)
 {
     configPtr = config;
-    // TODO investigate automatic scrolling for a smoother UX  i.e. scrollok()
-
+    
     InitializeFormatters();
 
     root = initscr();           // start curses mode
@@ -81,7 +77,6 @@ void Screen::initScreen(std::shared_ptr<ProcmonConfiguration> config)
 
     LOG(INFO) << "ScreenH:" << screenH << "ScreenW:" << screenW << "Column Height:" << columnHeight;
 
-    // TODO harden UI to detect if terminal supports colors and exit appropriately
     // start initializing UI components
     initHeader();
     initFooter();
@@ -601,7 +596,7 @@ void Screen::shutdownScreen()
 
 int Screen::getUserInput()
 {
-    return wgetch(headerWin);       // TODO investigate this to make sure it is dependable vs getch redrawing over all windows
+    return wgetch(headerWin);
 }
 
 void Screen::initColors()
@@ -934,7 +929,6 @@ void Screen::scrollDown()
         // page down to scroll to next page if the current page is full
         if(totalEvents == totalLines)
         {
-            // TODO in the state machine refactor of the UI redo this logic
             int oldPage = currentPage;
             pageDown();
 
@@ -1072,7 +1066,6 @@ std::string Screen::DecodeArguments(ITelemetry event)
     std::vector<struct SyscallSchema::SyscallSchema>& schema = config->GetSchema();
 
     // Find the schema item
-    // TODO: We have to be smarted how we store the Syscall schema. Rather than a vector of SyscallSchema entries key off of the syscall ID for faster lookup. 
     int index = FindSyscall(event.syscall);
     SyscallSchema::SyscallSchema item = schema[index];
 
@@ -1156,10 +1149,6 @@ std::string Screen::DecodeArguments(ITelemetry event)
 
         args+="  ";
     }
-    
-    // Once we complete the decoding of the arguments we can free the source buffer
-    // free(lineData.arguments); <--- I am going to leave this line here for a later conversation point with Mario
-
     return args;
 }
 
@@ -1254,8 +1243,6 @@ void Screen::resize()
 {
     // get new terminal size
     getmaxyx(stdscr, screenH, screenW);
-
-    // TODO error check for minimum terminal size needed
 
     // calculate column height for initial screen size
     columnHeight = screenH - HEADER_HEIGHT - FOOTER_HEIGHT;
@@ -1596,7 +1583,6 @@ void Screen::closeHelpView()
 }
 
 
-// TODO abstract all these views out to their own objects
 void Screen::showDetailView()
 {
     int y = 1;
@@ -1806,16 +1792,8 @@ void Screen::handleMouseEvent(MEVENT* event)
                 setLineColor(currentLine, LINE_COLOR);
                 currentLine = event->y - pidColumn->getY();
                 setLineColor(currentLine, HIGHLIGHT_COLOR);
-
-                // was this a double click?
-                if(event->bstate == BUTTON1_DOUBLE_CLICKED)
-                {
-                    // TODO open up detail view and display information on specific event for a double click
-                    LOG(INFO) << "Double click at Y: " << event->y;
-                }
             }
             break;
-        // TODO is there anything we can do for a right click?
 
         default:
             LOG(INFO) << "Unknown mouse click";

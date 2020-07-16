@@ -1,4 +1,4 @@
-# Process Monitor for Linux (Preview)
+# Process Monitor for Linux (Preview) [![Build Status](https://oss-sysinternals.visualstudio.com/Procmon%20for%20Linux/_apis/build/status/microsoft.ProcMon-for-Linux?branchName=main)](https://oss-sysinternals.visualstudio.com/Procmon%20for%20Linux/_build/latest?definitionId=18&branchName=main)
 Process Monitor (Procmon) is a Linux reimagining of the classic Procmon tool from the Sysinternals suite of tools for Windows.  Procmon provides a convenient and efficient way for Linux developers to trace the syscall activity on the system.  
 
 ![Procmon in use](procmon.gif "Procmon in use")
@@ -13,7 +13,7 @@ Process Monitor (Procmon) is a Linux reimagining of the classic Procmon tool fro
  
 
 ## Install Procmon
-Checkout our [install instructions](INSTALL.md) for ditribution specific steps to install Procmon.
+Checkout our [install instructions](INSTALL.md) for distribution specific steps to install Procmon.
 
 ## Building Procmon from source
 
