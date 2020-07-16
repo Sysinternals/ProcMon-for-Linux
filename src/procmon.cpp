@@ -22,12 +22,11 @@ int main(int argc, char *argv[])
 
     /*
     * Turn off cursor for shell. Note this has to be done before EBPF spins up.
-    * This is due to a conflict that leads to the consumer thread dieing when the sytem
+    * This is due to a conflict that leads to the consumer thread dieing when the system
     * function is executed.
     */
     system("setterm -cursor off");
 
-    // TODO properly configure logger rather then this basic config
     // Configure logging
     el::Loggers::addFlag(el::LoggingFlag::HierarchicalLogging);
     el::Loggers::addFlag(el::LoggingFlag::AutoSpacing);
@@ -41,7 +40,6 @@ int main(int argc, char *argv[])
     LOG(INFO) << "Tracing " << config->events.size() << " system calls";
 
     // Configure logging
-    // TODO integrate into ProcmonConfiguration
     el::Configurations defaultConf;
     defaultConf.setToDefault();
 

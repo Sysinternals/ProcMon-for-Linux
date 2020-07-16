@@ -22,7 +22,6 @@ void ProcmonConfiguration::HandlePidArgs(char *pidArgs)
         }
         catch(const std::exception& e)
         {
-            // TODO: Actual error handling
             std::cerr << "ProcmonConfiguration::Invalid pid specified - " << e.what() << '\n';
             CLIUtils::FastExit();
         }
@@ -38,7 +37,6 @@ void ProcmonConfiguration::HandleStorageArgs(char *storageArgs)
     }
     else
     {
-        // TODO: actual error handling...
         std::cerr << "ProcmonConfiguration::\"" << storageArgs << "\" is not a valid storage engine" << std::endl;
         CLIUtils::FastExit();
     }
@@ -108,17 +106,14 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
                 CLIUtils::DisplayUsage(true);
                 break;
             case 'p':
-                //CLIUtils::ProtectArgNotNull(optarg, "pids");
                 HandlePidArgs(optarg);
                 break;
 
             case 's':
-                //CLIUtils::ProtectArgNotNull(optarg, "storageEngine");
                 HandleStorageArgs(optarg);
                 break;
 
             case 'e':
-                //CLIUtils::ProtectArgNotNull(optarg, "events");
                 HandleEventArgs(optarg);
                 break;
 
@@ -186,7 +181,7 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
     _tracerEngine->AddEvent(events);
     _tracerEngine->AddPids(pids);
 
-    // TODO dynamically handle this based on architecture rather then current limit of x86_64
+    // List of all syscalls that contain pointer params
     pointerSyscalls = ::SyscallSchema::Utils::Linux64PointerSycalls;
 }
 

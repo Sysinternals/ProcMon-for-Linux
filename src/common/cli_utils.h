@@ -19,7 +19,6 @@ namespace CLIUtils
     {
         if (arg == NULL)
         {
-            // TODO: real error logging 
             std::cerr << "ERROR: The argument '" << argName << "' cannot be null." << std::endl << std::endl;
             DisplayUsage(true);
         }

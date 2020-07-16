@@ -65,7 +65,7 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
         {
             auto code = schemaTable.update_value(::SyscallSchema::Utils::GetSyscallNumberForName(event.Name()), std::move(*schemaItr.base()));
             if (code.code())
-                std::cout << "ERROR" << std::endl; // TODO
+                std::cout << "ERROR" << std::endl;
         }
     }
 
@@ -85,7 +85,6 @@ void EbpfTracerEngine::SetRunState(int runState)
 
 EbpfTracerEngine::~EbpfTracerEngine()
 {
-    // TODO: don't wait on these?
     EventQueue.cancel();
     PollingThread.join();
     ConsumerThread.join();
@@ -115,7 +114,6 @@ void EbpfTracerEngine::Poll()
 {
     while (!EventQueue.isCancelled())
     {
-        // TODO: poll ebpf perf buffer which is blocking
         if (BPF->poll_perf_buffer("events", 500) == -1)
         {
             // either we closed the perf buffer
@@ -144,7 +142,6 @@ void EbpfTracerEngine::Consume()
         
         if (!event.has_value()) 
         {
-            // TODO: Consider something better than just straight yielding the processor.
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         }
@@ -162,8 +159,6 @@ void EbpfTracerEngine::Consume()
             batch.clear();
         }
 
-        // TODO: - write a function for converting RawEbpfEvent to ITelemetry
-        //       - should this live in RawEbpfEvent?
         std::string syscall = SyscallSchema::Utils::SyscallNumberToName[event->sysnum];
         ITelemetry tel;
         tel.pid = event->pid;
@@ -203,7 +198,6 @@ void EbpfTracerEngine::Consume()
         batch.push_back(tel);
     }
 
-    // TODO: Any consumer cleanup
     return;
 }
 
@@ -240,7 +234,7 @@ StackTrace EbpfTracerEngine::GetStackTraceForIPs(int pid, uint64_t *kernelIPs, u
     {
         result.userIPs.push_back(userIPs[i]);
         int ret = bcc_symcache_resolve(cache, userIPs[i], &symbol);
-        // LOG(INFO) << "IP: " << userIPs[i] << "Ret: " << ret;
+
         if (ret != 0)
         {
             if (symbol.module != NULL)

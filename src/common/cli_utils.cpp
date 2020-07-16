@@ -11,14 +11,12 @@ namespace CLIUtils
         // re-enable cursor before exiting Procmon
         system("setterm -cursor on");
         
-        // TODO: something better?
         exit(-1);
     }
 
     // Prints usage string to terminal
     void DisplayUsage(bool shouldExit)
     {
-        // TODO
         std::cout << "procmon [OPTIONS...]" << std::endl;
         std::cout << "   OPTIONS" << std::endl;
         std::cout << "      -h/--help                Prints this help screen" << std::endl;

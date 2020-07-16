@@ -31,7 +31,6 @@ struct ProcmonArgs
     std::vector<pid_t> pids;
     std::vector<Event> events;
     StorageProxy::StorageEngineType storageEngineType;
-    // Other args
 };
 
 // Should only be created once.  Pass around using
@@ -61,11 +60,7 @@ private:
     std::string ConvertEpocTime(time_t time);
 
 public:
-    // TODO: What does every configuration need to have
-    // TODO: How do we map CLI args to fields here
-
-    // Initializes the configuration handling args 
-    // and creating necessary resources.
+    // Initializes the configuration handling args and creating necessary resources.
     ProcmonConfiguration(int argc, char *argv[]);
 
     // Getters & Setters
