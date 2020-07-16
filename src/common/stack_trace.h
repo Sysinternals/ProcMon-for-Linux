@@ -17,8 +17,6 @@ struct StackTrace
 
     StackTrace() {}
 
-    // TODO use better serialization
-    // TODO throw exception on null/empty stack to serialize
     std::string Serialize()
     {
         std::string ret;
@@ -32,7 +30,6 @@ struct StackTrace
         return ret;
     }
 
-    // TODO throw exception on null/empty stack trace to deserialize
     void Inflate(std::string blob) 
     {
         std::string token;

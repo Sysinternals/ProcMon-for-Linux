@@ -40,7 +40,6 @@ class StorageProxy
         case StorageEngineType::Sql:
             return new Sqlite3StorageEngine();
         default:
-            // TODO: handle this error better...
             return new MockStorageEngine();
         }
     };

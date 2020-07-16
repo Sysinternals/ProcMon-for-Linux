@@ -20,8 +20,6 @@ struct SyscallEvent
     uint64_t userStackCount;
     uint64_t kernelStack[MAX_STACK_FRAMES];
     uint64_t kernelStackCount;
-    // uint64_t userStackKey;
-    // uint64_t kernelStackKey;
     uint64_t ret;
     char comm[16];
     unsigned char buffer [MAX_BUFFER]; 
