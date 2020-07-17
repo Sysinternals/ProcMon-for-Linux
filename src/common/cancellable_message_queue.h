@@ -90,9 +90,4 @@ class CancellableMessageQueue
         cancelled = true;
         readCondition.notify_all();
     };
-
-    std::size_t calculateBackpressure() 
-    {
-        return currentReadQueue->size() + currentWriteQueue->size();
-    }
 };
