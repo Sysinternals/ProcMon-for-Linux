@@ -1525,7 +1525,7 @@ void Screen::showHelpView()
     panel_above(helpPanel);
 
     // print header
-    windowPrintFill(helpWin, COLUMN_HEADER_COLOR, 1, y, "%s %s.%s %s", "Procmon",  PROCMON_VERSION_MAJOR, PROCMON_VERSION_MINOR, "- (C) 2020 Microsoft Corporation. Licensed under the MIT license.");
+    windowPrintFill(helpWin, COLUMN_HEADER_COLOR, 1, y, "%s %d.%d %s", "Procmon",  PROCMON_VERSION_MAJOR, PROCMON_VERSION_MINOR, "- (C) 2020 Microsoft Corporation. Licensed under the MIT license.");
     y+=2;
 
     // print column labels
