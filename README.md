@@ -6,8 +6,7 @@ Process Monitor (Procmon) is a Linux reimagining of the classic Procmon tool fro
 # Installation & Usage
 
 ## Requirements
-* Minimum OS:
-    * Ubuntu 18.04 lts
+* OS: Ubuntu 18.04 lts with kernel >= 4.18 and kernel <= 5.3
 * `cmake` >= 3.13 (build-time only)
 * `libsqlite3-dev` >= 3.22 (build-time only)
  

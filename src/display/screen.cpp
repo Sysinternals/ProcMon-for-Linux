@@ -1125,7 +1125,7 @@ std::string Screen::DecodeArguments(ITelemetry event)
         else if (item.types[i] == SyscallSchema::ArgTag::PTR)
         {
             unsigned long val = 0;
-            int size = sizeof(unsigned long*);
+            int size = sizeof(unsigned long);
             memcpy(&val, event.arguments+readOffset, size);
             if(val==0)
             {
