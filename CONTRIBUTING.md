@@ -17,7 +17,7 @@ To contribute, fork the repository and create a branch in your fork for your wor
 * `Linux` OS (dev team is using Ubuntu 18.04)
   * Development can be done on Windows Subsystem for Linux, but Procmon cannot be executed in that environment
 * `git`
-* `cmake` >= 3.13
+* `cmake` >= 3.14
 * `libsqlite3-dev` >= 3.22
 
 ```bash
