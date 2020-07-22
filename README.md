@@ -20,7 +20,7 @@ Checkout our [install instructions](INSTALL.md) for distribution specific steps 
 ### 1. Install build dependencies
 ```bash
 sudo apt-get -y install bison build-essential flex git libedit-dev \
-  libllvm6.0 llvm-6.0-dev libclang-6.0-dev python zlib1g-dev libelf-dev
+  libllvm6.0 llvm-6.0-dev libclang-6.0-dev python zlib1g-dev libelf-dev cmake
 ```
 
 ### 2. Build and install BCC
