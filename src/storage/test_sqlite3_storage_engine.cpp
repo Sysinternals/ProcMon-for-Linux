@@ -381,16 +381,16 @@ TEST_CASE("storage engine can store and retrieve items at the same time", "[Sqli
             std::vector<MockTelemetry> results;
             while (matchedTimes < 2) 
             {
-                uint accumlated = 0;
+                uint accumulated = 0;
                 bool allTrue = true;
                 for(int res = -20; res <= 20; res++)
                 {
                     REQUIRE_NOTHROW(results = engine.QueryByResultCodeInTimespan(res));
-                    accumlated += results.size();
+                    accumulated += results.size();
                     allTrue = allTrue && checkMatches(results, seenProcesses, pids, resFreq[res]);
                 }
 
-                if (accumlated == elementCount && allTrue)
+                if (accumulated == elementCount && allTrue)
                     matchedTimes += 1;
             }
         }));
