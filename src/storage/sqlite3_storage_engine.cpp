@@ -85,7 +85,7 @@ bool Sqlite3StorageEngine::Initialize(const std::vector<Event>& syscalls)
         return false;
 
     // We only create a single table for all events since there is no expected
-    // perf gains by using a seperate table for each syscall.
+    // perf gains by using a separate table for each syscall.
     rc = sqlite3_exec(dbConnection, SQL_CREATE_EBPF, 0, 0, nullptr);
     if (rc != SQLITE_OK)
         return false;
