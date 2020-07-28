@@ -557,7 +557,7 @@ std::vector<ITelemetry> Sqlite3StorageEngine::QueryByResultCodeInTimespan(
 
 /**
  * Primary querying function utilized by the UI to support column sorting both in
- * ascending and descengind order.
+ * ascending and descending order.
  * 
  * Pre:
  *  The database connection associated to the given syscall should already be open. 
