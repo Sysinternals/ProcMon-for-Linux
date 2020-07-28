@@ -1023,7 +1023,7 @@ void Screen::pageDown()
         // increment active page number
         currentPage++;
 
-        // get non fitlered event set
+        // get non filtered event set
         eventList = storageEngine->QueryByEventsinPage(config->pids, getCurrentPage(), getTotalLines(), screenConfig.getColumnSort(), screenConfig.getColumnAscending(), config->events);
     }
 
