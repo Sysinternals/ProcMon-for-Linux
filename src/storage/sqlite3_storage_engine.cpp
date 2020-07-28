@@ -70,7 +70,7 @@ Sqlite3StorageEngine::~Sqlite3StorageEngine()
  *  The database connection isn't open and ready flag set to false.
  *
  * Post:
- *  Assuming the storage engine hasn't been initialzied already, opens a 
+ *  Assuming the storage engine hasn't been initialized already, opens a 
  *  Sqlite3 database connection for all data elements and set the ready 
  *  flag to true.
  */
