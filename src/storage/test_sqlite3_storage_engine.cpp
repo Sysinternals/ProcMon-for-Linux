@@ -233,7 +233,7 @@ TEST_CASE("storage engine can retrieve added items", "[Sqlite3StorageEngine]") {
         CHECK(checkMatches(results, seenProcesses, pids, count));
     }
 
-    SECTION("Querying without any pid and specified page constaints returns expected results") {
+    SECTION("Querying without any pid and specified page constraints returns expected results") {
         auto pageNum = 0;
         auto eventsPerPage = 100;
         auto results = engine.QueryByEventsinPage({}, pageNum++, eventsPerPage, ScreenConfiguration::time, true);
@@ -247,14 +247,14 @@ TEST_CASE("storage engine can retrieve added items", "[Sqlite3StorageEngine]") {
         CHECK(checkMatches(results, seenProcesses, pids, eventsPerPage));
     }
 
-    SECTION("Querying with a single pid and specified page constaints returns expected results") {
+    SECTION("Querying with a single pid and specified page constraints returns expected results") {
         auto pageNum = 0;
         auto eventsPerPage = 100;
         auto results = engine.QueryByEventsinPage({1000}, pageNum, eventsPerPage, ScreenConfiguration::time, true);
         CHECK((checkMatches(results, seenProcesses, pids, eventsPerPage) || checkMatches(results, seenProcesses, pids, pidFreq[1000])));
     }
 
-    SECTION("Querying with a set of pids and specified page constaints returns expected results") {
+    SECTION("Querying with a set of pids and specified page constraints returns expected results") {
         auto pageNum = 0;
         auto eventsPerPage = 100;
         auto results = engine.QueryByEventsinPage({1000, 1005, 1006, 1008}, pageNum, eventsPerPage, ScreenConfiguration::time, true);
