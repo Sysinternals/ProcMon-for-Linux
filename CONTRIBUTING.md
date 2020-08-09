@@ -16,6 +16,8 @@ To contribute, fork the repository and create a branch in your fork for your wor
 ### Environment
 * `Linux` OS (dev team is using Ubuntu 18.04)
   * Development can be done on Windows Subsystem for Linux, but Procmon cannot be executed in that environment
+  * To execute Procmon you need `kernel` >= 4.18 and <= 5.3. Those are *not* Ubuntu 18.04 GA kernels,
+  please refer to [install instructions](INSTALL.md) for more info.
 * `git`
 * `cmake` >= 3.14
 * `libsqlite3-dev` >= 3.22
