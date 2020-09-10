@@ -68,7 +68,7 @@ class CancellableMessageQueue
     {
         std::unique_lock<std::mutex> lock(writeLock);
         // got lock!
-        currentWriteQueue->push(value);
+        currentWriteQueue->push(std::move(value));
         readCondition.notify_all();
     };
 
