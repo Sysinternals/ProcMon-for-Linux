@@ -20,23 +20,23 @@ protected:
 
     std::string CalculateDeltaTimestamp(uint64_t ebpfEventTimestamp);
     int FindSyscall(std::string& syscallName);
-    std::string DecodeArguments(ITelemetry event);
+    std::string DecodeArguments(ITelemetry &event);
 
 public:
     EventFormatter(){};
     virtual ~EventFormatter(){};
 
-    void Initialize(const std::string syscall, ProcmonConfiguration* config) { this->syscall = syscall; this->config = config; }
+    void Initialize(const std::string &syscall, ProcmonConfiguration* config) { this->syscall = syscall; this->config = config; }
 
     std::string& GetSyscall() { return syscall; }
 
-    virtual std::string GetTimestamp(ITelemetry event); 
-    virtual std::string GetPID(ITelemetry event); 
-    virtual std::string GetProcess(ITelemetry event);
-    virtual std::string GetOperation(ITelemetry event);
-    virtual std::string GetResult(ITelemetry event);
-    virtual std::string GetDuration(ITelemetry event);
-    virtual std::string GetDetails(ITelemetry event);
+    virtual std::string GetTimestamp(ITelemetry &event);
+    virtual std::string GetPID(ITelemetry &event);
+    virtual std::string GetProcess(ITelemetry &event);
+    virtual std::string GetOperation(ITelemetry &event);
+    virtual std::string GetResult(ITelemetry &event);
+    virtual std::string GetDuration(ITelemetry &event);
+    virtual std::string GetDetails(ITelemetry &event);
 };
 
 #endif
