@@ -70,7 +70,7 @@ Sqlite3StorageEngine::~Sqlite3StorageEngine()
  *  The database connection isn't open and ready flag set to false.
  *
  * Post:
- *  Assuming the storage engine hasn't been initialzied already, opens a 
+ *  Assuming the storage engine hasn't been initialized already, opens a 
  *  Sqlite3 database connection for all data elements and set the ready 
  *  flag to true.
  */
@@ -85,7 +85,7 @@ bool Sqlite3StorageEngine::Initialize(const std::vector<Event>& syscalls)
         return false;
 
     // We only create a single table for all events since there is no expected
-    // perf gains by using a seperate table for each syscall.
+    // perf gains by using a separate table for each syscall.
     rc = sqlite3_exec(dbConnection, SQL_CREATE_EBPF, 0, 0, nullptr);
     if (rc != SQLITE_OK)
         return false;
@@ -557,7 +557,7 @@ std::vector<ITelemetry> Sqlite3StorageEngine::QueryByResultCodeInTimespan(
 
 /**
  * Primary querying function utilized by the UI to support column sorting both in
- * ascending and descengind order.
+ * ascending and descending order.
  * 
  * Pre:
  *  The database connection associated to the given syscall should already be open. 
