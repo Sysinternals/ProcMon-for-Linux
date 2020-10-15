@@ -5,6 +5,15 @@
 #define SCREEN_H
 
 #include <ncurses.h>
+
+/* 
+ * Due to a conflict with ncurses OK macro and ebpf::StatusTuple::OK() 
+ * we have to undef OK and define a NCURSES_OK which is equivalent to 
+ * ncurses OK.
+ */
+#undef OK
+#define NCURSES_OK 0
+
 #include <panel.h>
 #include <vector>
 #include <unordered_map>

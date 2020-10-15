@@ -11,6 +11,7 @@
 
 bcc_symbol_option EbpfTracerEngine::SymbolOption = {.use_debug_file = 1,
                                                     .check_debug_file_crc = 1,
+						    .lazy_symbolize = 1,
                                                     .use_symbol_type = (1 << STT_FUNC) | (1 << STT_GNU_IFUNC)};
 
 EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents)
