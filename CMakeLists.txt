@@ -22,7 +22,7 @@ include(FetchContent)
 FetchContent_Declare(
   bcc
   GIT_REPOSITORY https://github.com/iovisor/bcc.git
-  GIT_TAG        v0.10.0
+  GIT_TAG        v0.15.0
 )
 
 FetchContent_GetProperties(bcc)
@@ -51,6 +51,7 @@ FetchContent_MakeAvailable(Catch2)
 # Set compiler flags.
 set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g -fno-omit-frame-pointer -DELPP_THREAD_SAFE -D ELPP_DEFAULT_LOG_FILE='\"/var/log/procmon.log\"'")
 set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Include required versioning, bcc, logging and sqlite3 header files. 
 include_directories(
@@ -86,9 +87,9 @@ target_link_libraries(
   configuration-static
   tracer-static
   storage-static
+  display-static 
   common-static
   bcc-static
-  display-static 
   ${CURSES_LIBRARIES}
   -lpanel
   logging-static
