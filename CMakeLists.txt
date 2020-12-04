@@ -126,12 +126,39 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER  "OSS Tooling Dev Team OSSToolingDevTeam@ser
 
 # setup install
 INSTALL(TARGETS procmon DESTINATION /usr/bin)
-INSTALL(FILES procmon.1 DESTINATION /usr/share/man/man1/)
 
-# build debian package
-set(CPACK_GENERATOR "DEB")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.26.1), libstdc++6 (>= 3.4.22), libncurses5 (>= 5.0)")
-execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
-set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}-${AZDO_BUILD_ID}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
+# are we running on centos or ubuntu build agent?
+execute_process(COMMAND lsb_release -si OUTPUT_VARIABLE distro OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if(distro STREQUAL "CentOS")
+  set(CPACK_GENERATOR "RPM")
+  execute_process(COMMAND uname -m OUTPUT_VARIABLE CPACK_RPM_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}-${AZDO_BUILD_ID}.${CPACK_RPM_PACKAGE_ARCHITECTURE})
+
+elseif(distro STREQUAL "Ubuntu")
+  # get distro name
+  execute_process(COMMAND lsb_release -sc OUTPUT_VARIABLE distro_name OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  # we are building a debian package
+  set(CPACK_GENERATOR "DEB")
+
+  # install manpage file
+  INSTALL(FILES procmon.1 DESTINATION /usr/share/man/man1/)
+
+  # check what version of Ubuntu we are working with
+  if(distro_name STREQUAL "xenial")       # 16.04
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.23), libstdc++6 (>= 5.4), libzstd1 (>= 1.3), libelf1 (>= 0.165), libncurses5 (>= 5.0), libtinfo5 (>= 6)")
+
+  elseif(distro_name STREQUAL "bionic")   # 18.04
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.26), libstdc++6 (>= 8.4), libzstd1 (>= 1.3), libelf1 (>= 0.170), libncurses5 (>= 5.0), libtinfo5 (>= 6)")
+  
+  elseif(distro_name STREQUAL "focal")    # 20.04
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.31), libstdc++6 (>= 10.2), libzstd1 (>= 1.4), libelf1 (>= 0.176), libncurses6 (>= 6.2), libtinfo6 (>= 6)")
+  endif()
+
+  execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}-${AZDO_BUILD_ID}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
+
+endif()
 
 include(CPack)
