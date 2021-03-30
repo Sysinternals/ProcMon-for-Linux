@@ -146,10 +146,7 @@ elseif(distro STREQUAL "Ubuntu")
   INSTALL(FILES procmon.1 DESTINATION /usr/share/man/man1/)
 
   # check what version of Ubuntu we are working with
-  if(distro_name STREQUAL "xenial")       # 16.04
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.23), libstdc++6 (>= 5.4), libzstd1 (>= 1.3), libelf1 (>= 0.165), libncurses5 (>= 5.0), libtinfo5 (>= 6)")
-
-  elseif(distro_name STREQUAL "bionic")   # 18.04
+  if(distro_name STREQUAL "bionic")   # 18.04
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.26), libstdc++6 (>= 8.4), libzstd1 (>= 1.3), libelf1 (>= 0.170), libncurses5 (>= 5.0), libtinfo5 (>= 6)")
   
   elseif(distro_name STREQUAL "focal")    # 20.04
