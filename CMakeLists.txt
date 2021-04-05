@@ -4,7 +4,7 @@ project (procmon)
 # Set the project version number.
 set (procmon_VERSION_MAJOR 1)
 set (procmon_VERSION_MINOR 0)
-set (procmon_VERSION_PATCH 0)
+set (procmon_VERSION_PATCH 1)
 
 # make ncurses a requirement
 find_package(Curses REQUIRED)
@@ -22,7 +22,7 @@ include(FetchContent)
 FetchContent_Declare(
   bcc
   GIT_REPOSITORY https://github.com/iovisor/bcc.git
-  GIT_TAG        v0.15.0
+  GIT_TAG        v0.19.0
 )
 
 FetchContent_GetProperties(bcc)
