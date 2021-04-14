@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <tuple>
+#include <map>
 
 #include "../common/telemetry.h"
 #include "../common/event.h"
@@ -13,6 +14,9 @@
 
 class IStorageEngine
 {
+protected:
+    std::map<std::string, std::tuple<int, uint64_t>> _syscallHitMap;
+
 public:
     IStorageEngine() {}
     virtual ~IStorageEngine(){};
@@ -67,6 +71,9 @@ public:
 
     // Load API
     virtual std::tuple<uint64_t, std::string> Load(std::string filePath) = 0;
+
+    // Hitmap API
+    virtual std::map<std::string, std::tuple<int, uint64_t>> GetHitmap () { return _syscallHitMap; }
 };
 
 #endif

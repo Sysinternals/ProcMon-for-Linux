@@ -24,6 +24,7 @@ class Column {
         int getWidth() { return width; }
         int getHeight() { return height; }
         std::string getColumnName() { return columnName; }
+        std::vector<std::string> getColumnData() { return columnData; }
         
         // helper functions
         void addLine(std::string value);
