@@ -947,11 +947,6 @@ void Screen::scrollDown()
     else
     {
         // highlight row below and set current line back to default
-        //if(pidColumn->getColumnData().at(currentLine+1) == "1944" && operationColumn->getColumnData().at(currentLine+1) == "write")
-        //{
-        //    LOG(INFO) << detailColumn->getColumnData().at(currentLine+1);
-        //}
-
         setLineColor(currentLine, LINE_COLOR);
         currentLine++;
         setLineColor(currentLine, HIGHLIGHT_COLOR);
