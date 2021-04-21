@@ -1495,8 +1495,8 @@ void Screen::closeHelpView()
 void Screen::showDetailView()
 {
     int y = 1;
-    ITelemetry event;
-    StackTrace eventTrace;
+    ITelemetry * event;
+    StackTrace * eventTrace;
     detailViewActive = true;
     int detailViewHeight = screenH / 2;
 
@@ -1513,10 +1513,10 @@ void Screen::showDetailView()
     wattron(detailWin, COLOR_PAIR(LINE_COLOR));
 
     // retrieve event
-    event = eventList[currentLine - 1];
+    event = &eventList[currentLine - 1];
 
     // get event formatter for syscall
-    EventFormatter * format = GetFormatter(event);
+    EventFormatter * format = GetFormatter(*event);
     if(format == NULL)
     {
         // If we dont find a formatter for that syscall, use the default formatter.
@@ -1526,25 +1526,25 @@ void Screen::showDetailView()
     }
 
     // add event details to window
-    mvwprintw(detailWin, y++, 2, "%-19s%s", "Timestamp:", format->GetTimestamp(event).c_str());     
-    mvwprintw(detailWin, y++, 2, "%-20s%s", "PID:", format->GetPID(event).c_str()); 
-    mvwprintw(detailWin, y++, 2, "%-20s%s", "Process:", format->GetProcess(event).c_str());
-    mvwprintw(detailWin, y++, 2, "%-20s%s", "Syscall:", format->GetOperation(event).c_str());
-    mvwprintw(detailWin, y++, 2, "%-20s%s", "Arguments:", format->GetDetails(event).c_str());
-    mvwprintw(detailWin, y++, 2, "%-20s%s", "Result:", format->GetResult(event).c_str());
+    mvwprintw(detailWin, y++, 2, "%-19s%s", "Timestamp:", format->GetTimestamp(*event).c_str());     
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "PID:", format->GetPID(*event).c_str()); 
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "Process:", format->GetProcess(*event).c_str());
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "Syscall:", format->GetOperation(*event).c_str());
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "Arguments:", format->GetDetails(*event).c_str());
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "Result:", format->GetResult(*event).c_str());
 
-    mvwprintw(detailWin, y++, 2, "%-20s%llu ns", "Duration:", format->GetDuration(event).c_str());
+    mvwprintw(detailWin, y++, 2, "%-20s%llu ns", "Duration:", format->GetDuration(*event).c_str());
     y++;
 
     // grab stack trace for current event
-    eventTrace = event.stackTrace;
+    eventTrace = &event->stackTrace;
     
 
     mvwprintw(detailWin, y++, 2, "Stack Trace:");
     // add stack trace to window
-    for(int i = 0; i < eventTrace.userIPs.size() && y < detailViewHeight - 1; i++)
+    for(int i = 0; i < eventTrace->userIPs.size() && y < detailViewHeight - 1; i++)
     {
-        mvwprintw(detailWin, y++, 4, "0x%-8X %s", eventTrace.userIPs[i], eventTrace.userSymbols[i].c_str());
+        mvwprintw(detailWin, y++, 4, "0x%-8X %s", eventTrace->userIPs[i], eventTrace->userSymbols[i].c_str());
     }    
 
     // draw border
