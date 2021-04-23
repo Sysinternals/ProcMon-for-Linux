@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <bcc/BPF.h>
+#include <BPF.h>
 #include <map>
 #include <memory>
 #include <vector>

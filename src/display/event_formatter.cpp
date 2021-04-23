@@ -126,17 +126,47 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
         }
         else if (item.types[i] == SyscallSchema::ArgTag::CHAR_PTR || item.types[i] == SyscallSchema::ArgTag::CONST_CHAR_PTR)
         {
-            if(event.syscall.compare("read")==0)
+            if(event.syscall.compare("read") == 0)
             {
-                args+="{in}";
+                args += "{in}";
+            }
+            else if (event.syscall.compare("write") == 0)
+            {
+                int size = MAX_BUFFER / 6;
+                std::stringstream ss;
+
+                // check to see if our preview buffer is larger then result of write 
+                if(size > event.result)
+                {
+                    size = event.result;
+                }
+
+                uint8_t buff[size] = {};
+                memcpy(buff, event.arguments + readOffset, size);
+                readOffset += size;
+
+                for(int i = 0; i < size; i++)
+                {
+                    ss << std::setfill('0') << std::setw(2) << std::hex << (uint32_t)buff[i] << " ";
+                }
+
+                args += ss.str();
             }
             else
             {
-                int size=MAX_BUFFER/6;
-                char buff[size] = {};
-                memcpy(buff, event.arguments+readOffset, size);
-                readOffset+=size;
-                args+=buff;
+                int size = MAX_BUFFER / 6;
+                uint8_t buff[size] = {};
+                std::stringstream ss;
+
+
+                memcpy(buff, event.arguments + readOffset, size);
+                readOffset += size;
+
+                for(int i = 0; i < size; i++)
+                {
+                    ss << std::hex << (uint32_t)buff[i] << " ";
+                }
+                args += ss.str();
             }
         }
         else if (item.types[i] == SyscallSchema::ArgTag::FD)
@@ -163,7 +193,6 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
                 ss << std::hex << val;
                 args+=ss.str();
             }
-
             readOffset+=size;
 
         }
@@ -173,12 +202,6 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
         }
 
         args+="  ";
-    }
-
-    // now that we have the argument string for detail view we need to santize it for ASCII control characters
-    for(int i = 0; i < args.length(); i++)
-    {
-        if(args[i] < ' ' || args[i] > '~') args[i] = ' ';
     }
 
     return args;

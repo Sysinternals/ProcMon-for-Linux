@@ -19,7 +19,6 @@ class ITracerEngine
 {
 protected:
     std::shared_ptr<IStorageEngine> _storageEngine;
-    std::map<std::string, std::tuple<int, uint64_t>> _syscallHitMap;
     std::vector<Event> _targetEvents;
     int RunState; 
     
@@ -35,7 +34,6 @@ public:
 
     virtual void RemoveEvent(Event eventToRemove) {};
     virtual void RemoveEvent(std::vector<Event> eventsToRemove) {};
-    virtual std::map<std::string, std::tuple<int, uint64_t>> GetHitmap () { return _syscallHitMap; }
     virtual void SetRunState(int runState) { RunState = runState; }
     virtual int GetRunState() { return RunState; }
 };

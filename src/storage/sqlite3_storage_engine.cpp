@@ -22,8 +22,15 @@
                                         startTime INT,                      \
                                         startEpocTime TEXT                  \
                                     );"
+#define SQL_CREATE_STATS            "CREATE TABLE IF NOT EXISTS stats ( \
+                                        syscall TEXT,                   \
+                                        count INTEGER,                  \
+                                        duration INTEGER                \
+                                    );"
 #define SQL_SELECT_STARTTIME        "SELECT startTime, startEpocTime from metadata"
+#define SQL_SELECT_STATS            "SELECT * FROM stats ORDER BY count LIMIT 10"
 #define SQL_INSERT_METADATA         "INSERT into metadata (startTime, startEpocTime) VALUES (?, ?)"
+#define SQL_INSERT_STATS            "INSERT into stats (syscall, count, duration) VALUES (?, ?, ?)"
 #define SQL_CLEAR_EBPF              "DELETE FROM ebpf"
 #define SQL_INITDB                  ":memory:"
 #define SQL_DELIMITER               ", "
@@ -92,6 +99,11 @@ bool Sqlite3StorageEngine::Initialize(const std::vector<Event>& syscalls)
 
     // Create metadata table for traces
     rc = sqlite3_exec(dbConnection, SQL_CREATE_METADATA, 0, 0, nullptr);
+    if (rc != SQLITE_OK)
+        return false;
+
+    // Create stat table for traces
+    rc = sqlite3_exec(dbConnection, SQL_CREATE_STATS, 0, 0, nullptr);
     if (rc != SQLITE_OK)
         return false;
 
@@ -777,9 +789,23 @@ std::vector<int> Sqlite3StorageEngine::QueryIdsBySearch(
  */
 bool Sqlite3StorageEngine::Store(ITelemetry data)
 {
-    if (!ready)
-        return false;
+    if (!ready) return false;
 
+    // Update the syscallHitMap map to keep total running syscalls and durations. We store it here
+    // in a shared map to avoid the cost of keeping an additional table. The map is sorted by duration
+    // only when user requests it through the 'Stats' capability.
+    if(_syscallHitMap.find(data.syscall) != _syscallHitMap.end())
+    {
+        std::tuple<int, uint64_t>* _syscallTuple = &_syscallHitMap[data.syscall];
+        std::get<0>(*_syscallTuple)++;
+        std::get<1>(*_syscallTuple) += data.duration;
+    }
+    else
+    {
+        _syscallHitMap.insert(std::make_pair(data.syscall, std::make_tuple(1, data.duration)));
+    }
+
+    // store syscall event in database
     sqlite3_stmt* stmt;
     auto rc = sqlite3_prepare_v2(dbConnection, SQL_INSERT SQL_END, -1, &stmt, nullptr);
     
@@ -918,6 +944,41 @@ bool Sqlite3StorageEngine::Export(std::tuple<uint64_t, std::string> startTime, s
     if (rc != SQLITE_DONE)
         return false;
 
+    // store stats of trace in stats table
+    typedef std::function<bool(std::pair<std::string, std::tuple<int, uint64_t>>, std::pair<std::string, std::tuple<int, uint64_t>>)> Comparator;
+ 
+	Comparator compFunctor =
+			[](std::pair<std::string, std::tuple<int, uint64_t>> elem1 ,std::pair<std::string, std::tuple<int, uint64_t>> elem2)
+			{
+				return std::get<1>(elem1.second) > std::get<1>(elem2.second);
+			};
+
+    std::set<std::pair<std::string, std::tuple<int, uint64_t>>, Comparator> sortedSyscalls(_syscallHitMap.begin(), _syscallHitMap.end(), compFunctor);
+
+    std::set<std::pair<std::string, std::tuple<int, uint64_t>>>::iterator it;
+    int i;
+
+    for (it = sortedSyscalls.begin(), i = 0; it != sortedSyscalls.end() && i < 10; ++it, i++)
+    {
+        sqlite3_stmt* stats;
+        rc = sqlite3_prepare_v2(dbConnection, SQL_INSERT_STATS SQL_END, -1, &stats, nullptr);
+        rc = rc & sqlite3_bind_text(stats, 1, it->first.c_str(), it->first.length() + 1, nullptr);
+        rc = rc & sqlite3_bind_int(stats, 2, std::get<0>(it->second));
+        rc = rc & sqlite3_bind_int64(stats, 3, std::get<1>(it->second));
+
+        if (rc != SQLITE_OK)
+        {
+            sqlite3_finalize(stats);
+            return false;
+        }
+
+        rc = sqlite3_step(stats);
+        sqlite3_finalize(stats);
+
+        if (rc != SQLITE_DONE)
+            return false;
+    }
+
 
     rc = sqlite3_open(filePath.c_str(), &pFile);
     if (rc == SQLITE_OK) 
@@ -945,7 +1006,12 @@ std::tuple<uint64_t, std::string> Sqlite3StorageEngine::Load(std::string filepat
     sqlite3_stmt* stmt;
     uint64_t startTimeTicks;
     std::string startTimeEpoc;
+    std::string columnName, syscall;
+    int count;
+    uint64_t duration;
 
+    // clear syscall hitmap
+    _syscallHitMap.clear();
 
     // close connection to in memory database
     auto rc = sqlite3_close(dbConnection);
@@ -965,6 +1031,61 @@ std::tuple<uint64_t, std::string> Sqlite3StorageEngine::Load(std::string filepat
     }
 
     if(sqlite3_step(stmt) == SQLITE_ROW) telemetryCount = sqlite3_column_int(stmt, 0);
+
+    // extract stats information
+    rc = sqlite3_prepare_v2(dbConnection, SQL_SELECT_STATS SQL_END, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        sqlite3_finalize(stmt);
+        throw std::runtime_error{"Failed to query DB for stats"};
+    }
+
+    // start iterating over stat resultset
+    rc = sqlite3_step(stmt);
+
+    while(rc != SQLITE_DONE)
+    {
+        switch(rc)
+        {
+            case SQLITE_ROW:
+            {
+                for(int i = 0; i < sqlite3_column_count(stmt); i++)
+                {
+                    columnName = sqlite3_column_name(stmt, i);
+                    if (columnName == "syscall")
+                    {
+                        const char* _syscall = reinterpret_cast<const char*>(sqlite3_column_text(stmt, i));
+                        if (_syscall == NULL)
+                            continue;
+
+                        syscall = std::string(_syscall);
+                    }
+                    else if(columnName == "count")
+                    {
+                        count = sqlite3_column_int(stmt, i);
+                    }
+                    else if(columnName == "duration")
+                    {
+                        duration = sqlite3_column_int64(stmt, i);
+                    }
+                }
+                _syscallHitMap.insert(std::make_pair(syscall, std::make_tuple(count, duration)));
+                rc = sqlite3_step(stmt);
+                break;
+            }
+            case SQLITE_ERROR:
+            {
+                throw std::runtime_error{"Sqlite3 error encountered."};
+            }
+            case SQLITE_LOCKED:
+            {
+                // Sleep for 10ms and retry again...Consider something better later.
+                sqlite3_sleep(10);
+                continue;
+            }
+        }
+    }
+    sqlite3_finalize(stmt);
 
     // extract trace metadata and configure procmon
     rc = sqlite3_prepare_v2(dbConnection, SQL_SELECT_STARTTIME SQL_END, -1, &stmt, nullptr);

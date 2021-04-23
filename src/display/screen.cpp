@@ -132,6 +132,9 @@ void Screen::run()
         try
         {
             startTime = storageEngine->Load(config->GetTraceFilePath());
+
+            // update footer
+            drawFooterFkeys();
         }
         catch(const std::runtime_error& e)
         {
@@ -1058,100 +1061,6 @@ EventFormatter* Screen::GetFormatter(ITelemetry lineData)
 }
 
 
-std::string Screen::DecodeArguments(ITelemetry event)
-{
-    std::string args = "";
-
-    ProcmonConfiguration* config = configPtr.get();
-    std::vector<struct SyscallSchema::SyscallSchema>& schema = config->GetSchema();
-
-    // Find the schema item
-    int index = FindSyscall(event.syscall);
-    SyscallSchema::SyscallSchema item = schema[index];
-
-    int readOffset = 0; 
-    for(int i=0; i<item.usedArgCount; i++)
-    {
-        args+=item.argNames[i]; 
-        args+="=";
-
-        if(item.types[i]==SyscallSchema::ArgTag::INT || item.types[i]==SyscallSchema::ArgTag::LONG)
-        {
-            long val = 0;
-            int size = sizeof(long);
-            memcpy(&val, event.arguments+readOffset, size);
-            args+=std::to_string(val);
-            readOffset+=size; 
-        }
-        else if(item.types[i]==SyscallSchema::ArgTag::UINT32)
-        {
-            uint32_t val = 0;
-            int size = sizeof(uint32_t);
-            memcpy(&val, event.arguments+readOffset, size);
-            args+=std::to_string(val);
-            readOffset+=size; 
-        }         
-        else if (item.types[i] == SyscallSchema::ArgTag::UNSIGNED_INT || item.types[i] == SyscallSchema::ArgTag::UNSIGNED_LONG || item.types[i] == SyscallSchema::ArgTag::SIZE_T || item.types[i] == SyscallSchema::ArgTag::PID_T)
-        {
-            unsigned long val = 0;
-            int size = sizeof(unsigned long);
-            memcpy(&val, event.arguments+readOffset, size);
-            args+=std::to_string(val); 
-            readOffset+=size; 
-        }        
-        else if (item.types[i] == SyscallSchema::ArgTag::CHAR_PTR || item.types[i] == SyscallSchema::ArgTag::CONST_CHAR_PTR)
-        {   
-            if(event.syscall.compare("read")==0)
-            {
-                args+="{in}";
-            }
-            else
-            {
-                int size=MAX_BUFFER/6;
-                char buff[size] = {};
-                memcpy(buff, event.arguments+readOffset, size);
-                readOffset+=size;
-                args+=buff; 
-            }
-        }
-        else if (item.types[i] == SyscallSchema::ArgTag::FD)
-        {
-            int size=MAX_BUFFER/6;
-            char buff[size] = {};
-            memcpy(buff, event.arguments+readOffset, size);
-            readOffset+=size;
-            args+=buff; 
-        }
-        else if (item.types[i] == SyscallSchema::ArgTag::PTR)
-        {
-            unsigned long val = 0;
-            int size = sizeof(unsigned long);
-            memcpy(&val, event.arguments+readOffset, size);
-            if(val==0)
-            {
-                args+="NULL";
-            }
-            else
-            {
-                args+="0x";
-                std::stringstream ss;
-                ss << std::hex << val;
-                args+=ss.str();
-            }
-
-            readOffset+=size; 
-
-        }      
-        else
-        {
-            args+="{}";
-        }
-
-        args+="  ";
-    }
-    return args;
-}
-
 int Screen::FindSyscall(std::string& syscallName)
 {
     ProcmonConfiguration* config = configPtr.get();
@@ -1173,7 +1082,7 @@ int Screen::FindSyscall(std::string& syscallName)
 void Screen::addLine(ITelemetry lineData)
 {
     EventFormatter* format = GetFormatter(lineData);
-    if(format==NULL)
+    if(format == NULL)
     {
         // If we dont find a formatter for that syscall, use the default formatter.
         // Our default formatter is always the first item in the vector with a syscall name of "" 
@@ -1478,7 +1387,7 @@ void Screen::showStatView()
     // reset color
     wattron(statWin, COLOR_PAIR(LINE_COLOR));
 
-    std::map<std::string, std::tuple<int, uint64_t>> syscallHitMap = configPtr->GetTracer()->GetHitmap();
+    std::map<std::string, std::tuple<int, uint64_t>> syscallHitMap = configPtr->GetStorage()->GetHitmap();
 
 	typedef std::function<bool(std::pair<std::string, std::tuple<int, uint64_t>>, std::pair<std::string, std::tuple<int, uint64_t>>)> Comparator;
  
@@ -1606,15 +1515,25 @@ void Screen::showDetailView()
     // retrieve event
     event = &eventList[currentLine - 1];
 
+    // get event formatter for syscall
+    EventFormatter * format = GetFormatter(*event);
+    if(format == NULL)
+    {
+        // If we dont find a formatter for that syscall, use the default formatter.
+        // Our default formatter is always the first item in the vector with a syscall name of "" 
+        std::vector<EventFormatter*>::iterator it = formatters.begin(); 
+        format = (*it);
+    }
+
     // add event details to window
-    mvwprintw(detailWin, y++, 2, "%-19s%s", "Timestamp:", calculateDeltaTimestamp(event->timestamp).c_str());     
-    mvwprintw(detailWin, y++, 2, "%-20s%d", "PID:", event->pid); 
-    mvwprintw(detailWin, y++, 2, "%-20s%s", "Process:", event->processName.c_str());
-    mvwprintw(detailWin, y++, 2, "%-20s%s", "Command Line:", event->comm.c_str());
-    mvwprintw(detailWin, y++, 2, "%-20s%s", "Syscall:", event->syscall.c_str());
-    mvwprintw(detailWin, y++, 2, "%-20s%s", "Arguments:", DecodeArguments(*event).c_str());
-    mvwprintw(detailWin, y++, 2, "%-20s%d", "Result:", event->result);
-    mvwprintw(detailWin, y++, 2, "%-20s%llu ns", "Duration:", event->duration);
+    mvwprintw(detailWin, y++, 2, "%-19s%s", "Timestamp:", format->GetTimestamp(*event).c_str());     
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "PID:", format->GetPID(*event).c_str()); 
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "Process:", format->GetProcess(*event).c_str());
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "Syscall:", format->GetOperation(*event).c_str());
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "Arguments:", format->GetDetails(*event).c_str());
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "Result:", format->GetResult(*event).c_str());
+
+    mvwprintw(detailWin, y++, 2, "%-20s%llu ns", "Duration:", format->GetDuration(*event).c_str());
     y++;
 
     // grab stack trace for current event
@@ -1864,31 +1783,4 @@ void Screen::windowPrintFillRight(WINDOW * win, int colorPair, int x, int y, con
     // print to screen
     wprintw(win, "%s", buffer);
     free(buffer);
-}
-
-std::string Screen::calculateDeltaTimestamp(uint64_t ebpfEventTimestamp)
-{
-    ProcmonConfiguration * config = configPtr.get();
-    std::string deltaTimestamp;
-
-    // calculate delta from beginning of procmon for timestamp column
-    uint64_t delta = ebpfEventTimestamp - (config->GetStartTime());
-    
-
-    LOG(DEBUG) << "Ebpf: " << ebpfEventTimestamp << " Startup: " << config->GetStartTime() << " Delta: " << delta;
-
-    unsigned hour = delta / 3600000000000;
-    delta = delta % 3600000000000;
-    unsigned min = delta / 60000000000;
-    delta = delta % 60000000000;
-    unsigned sec = delta / 1000000000;
-    delta = delta % 1000000000;
-    unsigned millisec = delta / 1000000;
-
-    deltaTimestamp += " +" + std::to_string(hour) + ":" + 
-        std::to_string(min) + ":" +
-        std::to_string(sec) + "." +
-        std::to_string(millisec);
-
-    return deltaTimestamp;
 }

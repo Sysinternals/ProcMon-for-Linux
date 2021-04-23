@@ -6,7 +6,7 @@ Process Monitor (Procmon) is a Linux reimagining of the classic Procmon tool fro
 # Installation & Usage
 
 ## Requirements
-* OS: Ubuntu 18.04 lts with kernel >= 4.18 and kernel <= 5.3
+* OS: Ubuntu 18.04 lts 
 * `cmake` >= 3.14 (build-time only)
 * `libsqlite3-dev` >= 3.22 (build-time only)
  
@@ -23,17 +23,7 @@ sudo apt-get -y install bison build-essential flex git libedit-dev \
   libllvm6.0 llvm-6.0-dev libclang-6.0-dev python zlib1g-dev libelf-dev
 ```
 
-### 2. Build and install BCC
-```bash
-git clone --branch tag_v0.10.0 https://github.com/iovisor/bcc.git
-mkdir bcc/build
-cd bcc/build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr
-make
-sudo make install
-```
-
-### 3. Build Procmon
+### 2. Build Procmon
 ```bash
 git clone https://github.com/Microsoft/Procmon-for-Linux
 cd Procmon-for-Linux
