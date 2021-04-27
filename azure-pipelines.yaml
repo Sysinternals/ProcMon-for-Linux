@@ -14,7 +14,7 @@ pr:
 
 jobs:
   - job: "Build_Procmon"
-    pool: "Procmon-Ubuntu-Pool"
+    pool: "Procmon-Ubuntu-18.04-Pool"
     steps:
     - script: |
         mkdir build && cd build
