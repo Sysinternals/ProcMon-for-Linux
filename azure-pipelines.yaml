@@ -22,7 +22,7 @@ jobs:
         make
       displayName: "Build Procmon Binary"
   
-  - job: "Ubuntu-18.04-Package-Build"
+  - job: "Ubuntu_18_Package_Build"
     pool: "Procmon-18-Ubuntu-Pool"
     condition: not(eq(variables['Build.Reason'], 'PullRequest'))
     dependsOn:
@@ -55,7 +55,7 @@ jobs:
         ArtifactName: 'drop'
         publishLocation: 'Container'
 
-  - job: "Ubuntu-20.04-Package-Build"
+  - job: "Ubuntu_20_Package_Build"
     pool: "Procmon-20-Ubuntu-Pool"
     condition: not(eq(variables['Build.Reason'], 'PullRequest'))
     dependsOn:
