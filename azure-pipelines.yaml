@@ -14,7 +14,7 @@ pr:
 
 jobs:
   - job: "Build_Procmon"
-    pool: "Procmon-Ubuntu-Pool"
+    pool: "Procmon-Ubuntu-18.04-Pool"
     steps:
     - script: |
         mkdir build && cd build
@@ -22,8 +22,8 @@ jobs:
         make
       displayName: "Build Procmon Binary"
   
-  - job: "DEB_PACKAGE_BUILD"
-    pool: "Procmon-Ubuntu-Pool"
+  - job: "Ubuntu_18_Package_Build"
+    pool: "Procmon-Ubuntu-18.04-Pool"
     condition: not(eq(variables['Build.Reason'], 'PullRequest'))
     dependsOn:
       - "Build_Procmon"
@@ -34,19 +34,52 @@ jobs:
         mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
         cmake ..
         make
-      displayName: "Build Procmon Binary"
+      displayName: "Build Procmon 18.04 Binary"
     
     - script: |
         mkdir $(Build.SourcesDirectory)/pkgbuild
         cd $(Build.SourcesDirectory)/build
         cpack ..
         mv *.deb $(Build.SourcesDirectory)/pkgbuild
-      displayName: "Build DEB Package"
+      displayName: "Build DEB 18.04 Package"
     
     - task: CopyFiles@2
       inputs:
         SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
-        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/18.04/'
+      displayName: 'Copy build artifacts to staging'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
+  - job: "Ubuntu_20_Package_Build"
+    pool: "Procmon-Ubuntu-20.04-Pool"
+    condition: not(eq(variables['Build.Reason'], 'PullRequest'))
+    dependsOn:
+      - "Ubuntu_18_Package_Build"
+    steps:
+    - script: |
+        export REVISION=$(Build.BuildId)
+        sed -i "s/999999/$REVISION/g" $(Build.SourcesDirectory)/CMakeLists.txt
+        mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
+        cmake ..
+        make
+      displayName: "Build Procmon 20.04 Binary"
+    
+    - script: |
+        mkdir $(Build.SourcesDirectory)/pkgbuild
+        cd $(Build.SourcesDirectory)/build
+        cpack ..
+        mv *.deb $(Build.SourcesDirectory)/pkgbuild
+      displayName: "Build DEB 20.04 Package"
+    
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/20.04/'
       displayName: 'Copy build artifacts to staging'
 
     - task: PublishBuildArtifacts@1
