@@ -82,7 +82,7 @@ namespace SyscallSchema
             // The line that contains this substring is up to where we skip to.
             std::regex syscall_nrRegex("__syscall_nr");
             // Regex to parse argument info.
-            std::regex argFieldTypeName("(field:)([a-zA-Z0-9_\\s\\*]+)+(;)");
+            std::regex argFieldTypeName("(field:)([a-zA-Z0-9_\\s\\*]+)(;)");
             // Regex to parse arg and name
             std::regex argTypeAndName("([a-z\\* _]+)+ ([a-z_]+)$");
 
