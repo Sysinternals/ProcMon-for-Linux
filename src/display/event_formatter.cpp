@@ -141,7 +141,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
                     size = event.result;
                 }
 
-                uint8_t buff[size] = {};
+                uint8_t buff[size];
                 memcpy(buff, event.arguments + readOffset, size);
                 readOffset += size;
 
@@ -155,7 +155,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
             else
             {
                 int size = MAX_BUFFER / 6;
-                uint8_t buff[size] = {};
+                uint8_t buff[size];
                 std::stringstream ss;
 
 
@@ -172,7 +172,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
         else if (item.types[i] == SyscallSchema::ArgTag::FD)
         {
             int size=MAX_BUFFER/6;
-            char buff[size] = {};
+            char buff[size];
             memcpy(buff, event.arguments+readOffset, size);
             readOffset+=size;
             args+=buff;
