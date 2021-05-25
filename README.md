@@ -76,7 +76,7 @@ sudo procmon -f procmon.db
 ```
 
 # Feedback
-* Ask a question on StackOverflow (tag with ProcmonForLinux)
+* Ask a question on Stack Overflow (tag with ProcmonForLinux)
 * Request a new feature on GitHub
 * Vote for popular feature requests
 * File a bug in GitHub Issues
