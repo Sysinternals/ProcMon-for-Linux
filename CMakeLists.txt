@@ -22,7 +22,7 @@ include(FetchContent)
 FetchContent_Declare(
   bcc
   GIT_REPOSITORY https://github.com/iovisor/bcc.git
-  GIT_TAG        v0.19.0
+  GIT_TAG        v0.21.0
 )
 
 FetchContent_GetProperties(bcc)
