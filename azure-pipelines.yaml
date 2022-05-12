@@ -62,8 +62,6 @@ stages:
     - job: "Ubuntu_20_Package_Build"
       pool: "Procmon-Ubuntu-20.04-Pool"
       condition: not(eq(variables['Build.Reason'], 'PullRequest'))
-      dependsOn:
-        - "Ubuntu_18_Package_Build"
       steps:
          - script: |
              export REVISION=$(Build.BuildId)
