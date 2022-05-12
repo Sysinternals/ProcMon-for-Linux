@@ -55,6 +55,24 @@ jobs:
         ArtifactName: 'drop'
         publishLocation: 'Container'
 
+    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+      displayName: 'ESRP CodeSigning DEB'
+      inputs:
+        ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
+        FolderPath: '$(Build.ArtifactStagingDirectory)/18.04'
+        Pattern: '*.deb'
+        signConfigType: inlineSignParams
+        inlineOperation: |
+          [
+            {
+              "keyCode": "CP-450779-Pgp",
+              "OperationCode": "LinuxSign",
+              "Parameters": {},
+              "ToolName": "sign",
+              "ToolVersion": "1.0"
+            }
+          ]
+
   - job: "Ubuntu_20_Package_Build"
     pool: "Procmon-Ubuntu-20.04-Pool"
     condition: not(eq(variables['Build.Reason'], 'PullRequest'))
@@ -88,3 +106,20 @@ jobs:
         ArtifactName: 'drop'
         publishLocation: 'Container'
 
+    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+      displayName: 'ESRP CodeSigning DEB'
+      inputs:
+        ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
+        FolderPath: '$(Build.ArtifactStagingDirectory)/20.04'
+        Pattern: '*.deb'
+        signConfigType: inlineSignParams
+        inlineOperation: |
+          [
+            {
+              "keyCode": "CP-450779-Pgp",
+              "OperationCode": "LinuxSign",
+              "Parameters": {},
+              "ToolName": "sign",
+              "ToolVersion": "1.0"
+            }
+          ]
