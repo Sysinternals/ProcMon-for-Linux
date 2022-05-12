@@ -43,7 +43,7 @@ stages:
       - task: PublishBuildArtifacts@1
         inputs:
           PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-          ArtifactName: 'drop'
+          ArtifactName: '18_04_drop'
           publishLocation: 'Container'
         displayName: 'Copy to artifacts'
       
@@ -75,7 +75,7 @@ stages:
          - task: PublishBuildArtifacts@1
            inputs:
             PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-            ArtifactName: 'drop'
+            ArtifactName: '20_04_drop'
             publishLocation: 'Container'
            displayName: 'Copy to artifacts'
 
@@ -84,11 +84,19 @@ stages:
     - job: "Sign_Procmon_Ubuntu_18_04"
       pool: "Procmon-Ubuntu-18.04-Pool"
       steps:
+      
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          buildType: 'current'
+          artifactName: '18_04_drop'
+          itemPattern: '**'
+          targetPath: '$(Pipeline.Workspace)'
+           
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
         displayName: 'ESRP CodeSigning DEB'
         inputs:
           ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-          FolderPath: '$(Build.ArtifactStagingDirectory)/18.04'
+          FolderPath: '$(Pipeline.Workspace)/18_04_drop'
           Pattern: '*.deb'
           signConfigType: inlineSignParams
           inlineOperation: |
@@ -105,11 +113,19 @@ stages:
     - job: "Sign_Procmon_Ubuntu_20_04"
       pool: "Procmon-Ubuntu-20.04-Pool"
       steps:
+
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          buildType: 'current'
+          artifactName: '20_04_drop'
+          itemPattern: '**'
+          targetPath: '$(Pipeline.Workspace)'
+
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
         displayName: 'ESRP CodeSigning DEB'
         inputs:
           ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-          FolderPath: '$(Build.ArtifactStagingDirectory)/20.04'
+          FolderPath: '$(Build.ArtifactStagingDirectory)/20_04_drop'
           Pattern: '*.deb'
           signConfigType: inlineSignParams
           inlineOperation: |
