@@ -89,7 +89,6 @@ stages:
         inputs:
           buildType: 'current'
           artifactName: '18_04_drop'
-          itemPattern: '**'
           targetPath: '$(Pipeline.Workspace)'
            
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
@@ -118,14 +117,13 @@ stages:
         inputs:
           buildType: 'current'
           artifactName: '20_04_drop'
-          itemPattern: '**'
           targetPath: '$(Pipeline.Workspace)'
 
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
         displayName: 'ESRP CodeSigning DEB'
         inputs:
           ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-          FolderPath: '$(Build.ArtifactStagingDirectory)/20_04_drop'
+          FolderPath: '$(Pipeline.Workspace)/20_04_drop'
           Pattern: '*.deb'
           signConfigType: inlineSignParams
           inlineOperation: |
