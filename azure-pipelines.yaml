@@ -12,114 +12,128 @@ trigger:
 pr:
 - main
 
-jobs:
-  - job: "Build_Procmon"
-    pool: "Procmon-Ubuntu-18.04-Pool"
-    steps:
-    - script: |
-        mkdir build && cd build
-        cmake ..
-        make
-      displayName: "Build Procmon Binary"
-  
-  - job: "Ubuntu_18_Package_Build"
-    pool: "Procmon-Ubuntu-18.04-Pool"
-    condition: not(eq(variables['Build.Reason'], 'PullRequest'))
-    dependsOn:
-      - "Build_Procmon"
-    steps:
-    - script: |
-        export REVISION=$(Build.BuildId)
-        sed -i "s/999999/$REVISION/g" $(Build.SourcesDirectory)/CMakeLists.txt
-        mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
-        cmake ..
-        make
-      displayName: "Build Procmon 18.04 Binary"
+stages:
+ - stage: Build Ubuntu 18.04
+   jobs:
+    - job: "Build_Procmon"
+      pool: "Procmon-Ubuntu-18.04-Pool"
+      steps:
+      - script: |
+          mkdir build && cd build
+          cmake ..
+          make
+        displayName: "Build Procmon Binary"
     
-    - script: |
-        mkdir $(Build.SourcesDirectory)/pkgbuild
-        cd $(Build.SourcesDirectory)/build
-        cpack ..
-        mv *.deb $(Build.SourcesDirectory)/pkgbuild
-      displayName: "Build DEB 18.04 Package"
+    - job: "Ubuntu_18_Package_Build"
+      pool: "Procmon-Ubuntu-18.04-Pool"
+      condition: not(eq(variables['Build.Reason'], 'PullRequest'))
+      dependsOn:
+        - "Build_Procmon"
+      steps:
+      - script: |
+          export REVISION=$(Build.BuildId)
+          sed -i "s/999999/$REVISION/g" $(Build.SourcesDirectory)/CMakeLists.txt
+          mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
+          cmake ..
+          make
+        displayName: "Build Procmon 18.04 Binary"
+      
+      - script: |
+          mkdir $(Build.SourcesDirectory)/pkgbuild
+          cd $(Build.SourcesDirectory)/build
+          cpack ..
+          mv *.deb $(Build.SourcesDirectory)/pkgbuild
+        displayName: "Build DEB 18.04 Package"
+      
+      - task: CopyFiles@2
+        inputs:
+          SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/18.04/'
+        displayName: 'Copy build artifacts to staging'
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+          ArtifactName: 'drop'
+          publishLocation: 'Container'
+
+ - stage: Build Ubuntu 20.04
+   jobs:
+    - job: "Ubuntu_20_Package_Build"
+      pool: "Procmon-Ubuntu-20.04-Pool"
+      condition: not(eq(variables['Build.Reason'], 'PullRequest'))
+      dependsOn:
+        - "Ubuntu_18_Package_Build"
+      steps:
+         - script: |
+             export REVISION=$(Build.BuildId)
+             sed -i "s/999999/$REVISION/g" $(Build.SourcesDirectory)/CMakeLists.txt
+             mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
+             cmake ..
+             make
+           displayName: "Build Procmon 20.04 Binary"
     
-    - task: CopyFiles@2
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
-        TargetFolder: '$(Build.ArtifactStagingDirectory)/18.04/'
-      displayName: 'Copy build artifacts to staging'
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'drop'
-        publishLocation: 'Container'
-
-    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
-      displayName: 'ESRP CodeSigning DEB'
-      inputs:
-        ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-        FolderPath: '$(Build.ArtifactStagingDirectory)/18.04'
-        Pattern: '*.deb'
-        signConfigType: inlineSignParams
-        inlineOperation: |
-          [
-            {
-              "keyCode": "CP-450779-Pgp",
-              "OperationCode": "LinuxSign",
-              "Parameters": {},
-              "ToolName": "sign",
-              "ToolVersion": "1.0"
-            }
-          ]
-
-  - job: "Ubuntu_20_Package_Build"
-    pool: "Procmon-Ubuntu-20.04-Pool"
-    condition: not(eq(variables['Build.Reason'], 'PullRequest'))
-    dependsOn:
-      - "Ubuntu_18_Package_Build"
-    steps:
-    - script: |
-        export REVISION=$(Build.BuildId)
-        sed -i "s/999999/$REVISION/g" $(Build.SourcesDirectory)/CMakeLists.txt
-        mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
-        cmake ..
-        make
-      displayName: "Build Procmon 20.04 Binary"
+         - script: |
+            mkdir $(Build.SourcesDirectory)/pkgbuild
+            cd $(Build.SourcesDirectory)/build
+            cpack ..
+            mv *.deb $(Build.SourcesDirectory)/pkgbuild
+           displayName: "Build DEB 20.04 Package"
     
-    - script: |
-        mkdir $(Build.SourcesDirectory)/pkgbuild
-        cd $(Build.SourcesDirectory)/build
-        cpack ..
-        mv *.deb $(Build.SourcesDirectory)/pkgbuild
-      displayName: "Build DEB 20.04 Package"
-    
-    - task: CopyFiles@2
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
-        TargetFolder: '$(Build.ArtifactStagingDirectory)/20.04/'
-      displayName: 'Copy build artifacts to staging'
+         - task: CopyFiles@2
+           inputs:
+             SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
+             TargetFolder: '$(Build.ArtifactStagingDirectory)/20.04/'
+           displayName: 'Copy build artifacts to staging'
 
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'drop'
-        publishLocation: 'Container'
+         - task: PublishBuildArtifacts@1
+           inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+            ArtifactName: 'drop'
+            publishLocation: 'Container'
 
-    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
-      displayName: 'ESRP CodeSigning DEB'
-      inputs:
-        ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-        FolderPath: '$(Build.ArtifactStagingDirectory)/20.04'
-        Pattern: '*.deb'
-        signConfigType: inlineSignParams
-        inlineOperation: |
-          [
-            {
-              "keyCode": "CP-450779-Pgp",
-              "OperationCode": "LinuxSign",
-              "Parameters": {},
-              "ToolName": "sign",
-              "ToolVersion": "1.0"
-            }
-          ]
+ - stage: SignPackages
+   jobs:
+    - job: "Sign18.04Package"
+      pool: "Procmon-Ubuntu-18.04-Pool"
+      steps:
+      - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+        displayName: 'ESRP CodeSigning DEB'
+        inputs:
+          ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
+          FolderPath: '$(Build.ArtifactStagingDirectory)/18.04'
+          Pattern: '*.deb'
+          signConfigType: inlineSignParams
+          inlineOperation: |
+            [
+              {
+                "keyCode": "CP-450779-Pgp",
+                "OperationCode": "LinuxSign",
+                "Parameters": {},
+                "ToolName": "sign",
+                "ToolVersion": "1.0"
+              }
+            ]
+
+    - job: "Sign20.04package"
+      pool: "Procmon-Ubuntu-20.04-Pool"
+      steps:
+      - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+        displayName: 'ESRP CodeSigning DEB'
+        inputs:
+          ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
+          FolderPath: '$(Build.ArtifactStagingDirectory)/20.04'
+          Pattern: '*.deb'
+          signConfigType: inlineSignParams
+          inlineOperation: |
+            [
+              {
+                "keyCode": "CP-450779-Pgp",
+                "OperationCode": "LinuxSign",
+                "Parameters": {},
+                "ToolName": "sign",
+                "ToolVersion": "1.0"
+              }
+            ]
+
+ 
