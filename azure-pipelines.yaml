@@ -13,22 +13,22 @@ pr:
 - main
 
 stages:
- - stage: "Build_Ubuntu_18"
+ - stage: "Build"
    jobs:
-    - job: "Build_Procmon"
+    - job: "Build_Ubuntu_18_04"
       pool: "Procmon-Ubuntu-18.04-Pool"
       steps:
       - script: |
           mkdir build && cd build
           cmake ..
           make
-        displayName: "Build Procmon Binary"
+        displayName: "Build on Ubuntu 18.04"
     
     - job: "Ubuntu_18_Package_Build"
       pool: "Procmon-Ubuntu-18.04-Pool"
       condition: not(eq(variables['Build.Reason'], 'PullRequest'))
       dependsOn:
-        - "Build_Procmon"
+        - "Build_Ubuntu_18_04"
       steps:
       - script: |
           export REVISION=$(Build.BuildId)
@@ -57,9 +57,7 @@ stages:
           ArtifactName: 'drop'
           publishLocation: 'Container'
 
- - stage: "Build_Ubuntu_20"
-   jobs:
-    - job: "Ubuntu_20_Package_Build"
+    - job: "Build_Ubuntu_20_04"
       pool: "Procmon-Ubuntu-20.04-Pool"
       condition: not(eq(variables['Build.Reason'], 'PullRequest'))
       steps:
@@ -69,7 +67,7 @@ stages:
              mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
              cmake ..
              make
-           displayName: "Build Procmon 20.04 Binary"
+           displayName: "Build on Ubuntu 20.04"
     
          - script: |
             mkdir $(Build.SourcesDirectory)/pkgbuild
@@ -90,9 +88,9 @@ stages:
             ArtifactName: 'drop'
             publishLocation: 'Container'
 
- - stage: SignPackages
+ - stage: Sign
    jobs:
-    - job: "Sign18Package"
+    - job: "Sign_Ubuntu_18_04"
       pool: "Procmon-Ubuntu-18.04-Pool"
       steps:
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
@@ -113,7 +111,7 @@ stages:
               }
             ]
 
-    - job: "Sign20Package"
+    - job: "Sign_Ubuntu_20_04"
       pool: "Procmon-Ubuntu-20.04-Pool"
       steps:
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
