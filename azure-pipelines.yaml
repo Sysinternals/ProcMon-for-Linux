@@ -15,15 +15,6 @@ pr:
 stages:
  - stage: "Build"
    jobs:
-    - job: "Build_Procmon_Ubuntu_18_04"
-      pool: "Procmon-Ubuntu-18.04-Pool"
-      steps:
-      - script: |
-          mkdir build && cd build
-          cmake ..
-          make
-        displayName: "Build Procmon Ubuntu 18.04 Binary"
-    
     - job: "Build_Procmon_Ubuntu_18_04_Package"
       pool: "Procmon-Ubuntu-18.04-Pool"
       condition: not(eq(variables['Build.Reason'], 'PullRequest'))
@@ -36,27 +27,28 @@ stages:
           mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
           cmake ..
           make
-        displayName: "Build Procmon 18.04 Binary"
+        displayName: "Build Ubuntu Procmon 18.04 Binary"
       
       - script: |
           mkdir $(Build.SourcesDirectory)/pkgbuild
           cd $(Build.SourcesDirectory)/build
           cpack ..
           mv *.deb $(Build.SourcesDirectory)/pkgbuild
-        displayName: "Build DEB 18.04 Package"
+        displayName: "Build Ubuntu Procmon 18.04 Package"
       
       - task: CopyFiles@2
         inputs:
           SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
           TargetFolder: '$(Build.ArtifactStagingDirectory)/18.04/'
-        displayName: 'Copy build artifacts to staging'
+        displayName: 'Copy build to staging'
 
       - task: PublishBuildArtifacts@1
         inputs:
           PathtoPublish: '$(Build.ArtifactStagingDirectory)'
           ArtifactName: 'drop'
           publishLocation: 'Container'
-
+        displayName: 'Copy to artifacts'
+      
     - job: "Build_Procmon_Ubuntu_20_04_Package"
       pool: "Procmon-Ubuntu-20.04-Pool"
       condition: not(eq(variables['Build.Reason'], 'PullRequest'))
@@ -74,19 +66,20 @@ stages:
             cd $(Build.SourcesDirectory)/build
             cpack ..
             mv *.deb $(Build.SourcesDirectory)/pkgbuild
-           displayName: "Build DEB 20.04 Package"
+           displayName: "Build Procmon Ubuntu 20.04 Package"
     
          - task: CopyFiles@2
            inputs:
              SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
              TargetFolder: '$(Build.ArtifactStagingDirectory)/20.04/'
-           displayName: 'Copy build artifacts to staging'
+           displayName: 'Copy build to staging'
 
          - task: PublishBuildArtifacts@1
            inputs:
             PathtoPublish: '$(Build.ArtifactStagingDirectory)'
             ArtifactName: 'drop'
             publishLocation: 'Container'
+           displayName: 'Copy to artifacts'
 
  - stage: Sign
    jobs:
