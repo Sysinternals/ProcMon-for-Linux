@@ -15,20 +15,20 @@ pr:
 stages:
  - stage: "Build"
    jobs:
-    - job: "Build_Ubuntu_18_04"
+    - job: "Build_Procmon_Ubuntu_18_04"
       pool: "Procmon-Ubuntu-18.04-Pool"
       steps:
       - script: |
           mkdir build && cd build
           cmake ..
           make
-        displayName: "Build on Ubuntu 18.04"
+        displayName: "Build Procmon Ubuntu 18.04 Binary"
     
-    - job: "Ubuntu_18_Package_Build"
+    - job: "Build_Procmon_Ubuntu_18_04_Package"
       pool: "Procmon-Ubuntu-18.04-Pool"
       condition: not(eq(variables['Build.Reason'], 'PullRequest'))
       dependsOn:
-        - "Build_Ubuntu_18_04"
+        - "Build_Procmon_Ubuntu_18_04"
       steps:
       - script: |
           export REVISION=$(Build.BuildId)
@@ -57,7 +57,7 @@ stages:
           ArtifactName: 'drop'
           publishLocation: 'Container'
 
-    - job: "Build_Ubuntu_20_04"
+    - job: "Build_Procmon_Ubuntu_20_04_Package"
       pool: "Procmon-Ubuntu-20.04-Pool"
       condition: not(eq(variables['Build.Reason'], 'PullRequest'))
       steps:
@@ -67,7 +67,7 @@ stages:
              mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
              cmake ..
              make
-           displayName: "Build on Ubuntu 20.04"
+           displayName: "Build Procmon Ubuntu 20.04 Binary"
     
          - script: |
             mkdir $(Build.SourcesDirectory)/pkgbuild
