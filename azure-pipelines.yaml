@@ -81,7 +81,7 @@ stages:
 
  - stage: Sign
    jobs:
-    - job: "Sign_Ubuntu_18_04"
+    - job: "Sign_Procmon_Ubuntu_18_04"
       pool: "Procmon-Ubuntu-18.04-Pool"
       steps:
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
@@ -102,7 +102,7 @@ stages:
               }
             ]
 
-    - job: "Sign_Ubuntu_20_04"
+    - job: "Sign_Procmon_Ubuntu_20_04"
       pool: "Procmon-Ubuntu-20.04-Pool"
       steps:
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
