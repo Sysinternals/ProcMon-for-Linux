@@ -95,7 +95,7 @@ stages:
         displayName: 'ESRP CodeSigning DEB'
         inputs:
           ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-          FolderPath: '$(Pipeline.Workspace)/18_04_drop/18.04'
+          FolderPath: '$(Pipeline.Workspace)/18.04'
           Pattern: '*.deb'
           signConfigType: inlineSignParams
           inlineOperation: |
@@ -123,7 +123,7 @@ stages:
         displayName: 'ESRP CodeSigning DEB'
         inputs:
           ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-          FolderPath: '$(Pipeline.Workspace)/20_04_drop/20.04'
+          FolderPath: '$(Pipeline.Workspace)/20.04'
           Pattern: '*.deb'
           signConfigType: inlineSignParams
           inlineOperation: |
