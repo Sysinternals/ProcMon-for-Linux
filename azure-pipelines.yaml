@@ -101,7 +101,7 @@ stages:
           inlineOperation: |
             [
               {
-                "keyCode": "CP-450779-Pgp",
+                "keyCode": "CP-230001",
                 "OperationCode": "LinuxSign",
                 "Parameters": {},
                 "ToolName": "sign",
@@ -129,7 +129,7 @@ stages:
           inlineOperation: |
             [
               {
-                "keyCode": "CP-450779-Pgp",
+                "keyCode": "CP-230001",
                 "OperationCode": "LinuxSign",
                 "Parameters": {},
                 "ToolName": "sign",
