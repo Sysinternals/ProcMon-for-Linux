@@ -17,7 +17,6 @@ stages:
    jobs:
     - job: "Build_Procmon_Ubuntu_18_04_Package"
       pool: "Procmon-Ubuntu-18.04-Pool"
-      condition: not(eq(variables['Build.Reason'], 'PullRequest'))
       steps:
       - script: |
           export REVISION=$(Build.BuildId)
@@ -49,7 +48,6 @@ stages:
       
     - job: "Build_Procmon_Ubuntu_20_04_Package"
       pool: "Procmon-Ubuntu-20.04-Pool"
-      condition: not(eq(variables['Build.Reason'], 'PullRequest'))
       steps:
          - script: |
              export REVISION=$(Build.BuildId)
@@ -83,6 +81,7 @@ stages:
    jobs:
     - job: "Sign_Procmon_Ubuntu_18_04"
       pool: "Procmon-Ubuntu-18.04-Pool"
+      condition: not(eq(variables['Build.Reason'], 'PullRequest'))      
       workspace:
         clean: all      
       steps:
@@ -113,6 +112,7 @@ stages:
 
     - job: "Sign_Procmon_Ubuntu_20_04"
       pool: "Procmon-Ubuntu-20.04-Pool"
+      condition: not(eq(variables['Build.Reason'], 'PullRequest'))      
       workspace:
         clean: all      
       steps:
