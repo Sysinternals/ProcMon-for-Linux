@@ -1,4 +1,11 @@
-# Azure build pipelines for Procdump-for-Linux
+# Azure build pipelines for Procmon-for-Linux
+
+resources:
+  repositories:
+  - repository: Procmon
+    type: github
+    endpoint: sysinternals
+    name: sysinternals/procmon-for-linux
 
 trigger:
     branches:
@@ -18,6 +25,7 @@ stages:
     - job: "Build_Procmon_Ubuntu_18_04_Package"
       pool: "Procmon-Ubuntu-18.04-Pool"
       steps:
+      - checkout: Procmon
       - script: |
           export REVISION=$(Build.BuildId)
           sed -i "s/999999/$REVISION/g" $(Build.SourcesDirectory)/CMakeLists.txt
@@ -49,6 +57,7 @@ stages:
     - job: "Build_Procmon_Ubuntu_20_04_Package"
       pool: "Procmon-Ubuntu-20.04-Pool"
       steps:
+         - checkout: Procmon
          - script: |
              export REVISION=$(Build.BuildId)
              sed -i "s/999999/$REVISION/g" $(Build.SourcesDirectory)/CMakeLists.txt
