@@ -83,6 +83,8 @@ stages:
    jobs:
     - job: "Sign_Procmon_Ubuntu_18_04"
       pool: "Procmon-Ubuntu-18.04-Pool"
+      workspace:
+        clean: all      
       steps:
       
       - task: DownloadPipelineArtifact@2
@@ -111,6 +113,8 @@ stages:
 
     - job: "Sign_Procmon_Ubuntu_20_04"
       pool: "Procmon-Ubuntu-20.04-Pool"
+      workspace:
+        clean: all      
       steps:
 
       - task: DownloadPipelineArtifact@2
