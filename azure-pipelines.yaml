@@ -90,7 +90,7 @@ stages:
    jobs:
     - job: "Sign_Procmon_Ubuntu_18_04"
       pool: "Procmon-Ubuntu-18.04-Pool"
-      condition: not(eq(variables['Build.Reason'], 'PullRequest'))      
+      condition: eq($(Sign), 'true')
       workspace:
         clean: all      
       steps:
@@ -121,7 +121,7 @@ stages:
 
     - job: "Sign_Procmon_Ubuntu_20_04"
       pool: "Procmon-Ubuntu-20.04-Pool"
-      condition: not(eq(variables['Build.Reason'], 'PullRequest'))      
+      condition: eq($(Sign), 'true')    
       workspace:
         clean: all      
       steps:
