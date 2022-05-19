@@ -43,16 +43,16 @@ stages:
       
       - task: CopyFiles@2
         inputs:
-          SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
-          TargetFolder: '$(Build.ArtifactStagingDirectory)/18.04/'
-        displayName: 'Copy build to staging'
+          Contents: '$(Build.SourcesDirectory)/pkgbuild/*.deb'
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/Ubuntu_18.04/'
+        displayName: 'Copy build artifacts to staging'
 
       - task: PublishBuildArtifacts@1
         inputs:
-          PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-          ArtifactName: '18_04_drop'
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)/Ubuntu_18.04'
+          ArtifactName: 'Ubuntu_18_04_drop'
           publishLocation: 'Container'
-        displayName: 'Copy to artifacts'
+        displayName: 'Copy DEB package to artifacts'
       
     - job: "Build_Procmon_Ubuntu_20_04_Package"
       pool: "Procmon-Ubuntu-20.04-Pool"
@@ -75,14 +75,14 @@ stages:
     
          - task: CopyFiles@2
            inputs:
-             SourceFolder: '$(Build.SourcesDirectory)/pkgbuild/'
-             TargetFolder: '$(Build.ArtifactStagingDirectory)/20.04/'
-           displayName: 'Copy build to staging'
+             Contents: '$(Build.SourcesDirectory)/pkgbuild/*.deb'
+             TargetFolder: '$(Build.ArtifactStagingDirectory)/Ubuntu_20.04/'
+           displayName: 'Copy build artifacts to staging'
 
          - task: PublishBuildArtifacts@1
            inputs:
-            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-            ArtifactName: '20_04_drop'
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)/Ubuntu_20.04'
+            ArtifactName: 'Ubuntu_20_04_drop'
             publishLocation: 'Container'
            displayName: 'Copy to artifacts'
 
@@ -98,14 +98,14 @@ stages:
       - task: DownloadPipelineArtifact@2
         inputs:
           buildType: 'current'
-          artifactName: '18_04_drop'
-          targetPath: '$(Pipeline.Workspace)'
+          artifactName: 'Ubuntu_18_04_drop'
+          targetPath: '$(Build.SourcesDirectory)'
            
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
         displayName: 'ESRP CodeSigning DEB'
         inputs:
           ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-          FolderPath: '$(Pipeline.Workspace)/18.04'
+          FolderPath: '$(Build.SourcesDirectory)/Ubuntu_18.04_drop'
           Pattern: '*.deb'
           signConfigType: inlineSignParams
           inlineOperation: |
@@ -118,6 +118,19 @@ stages:
                 "ToolVersion": "1.0"
               }
             ]
+
+      - task: CopyFiles@2
+        inputs:
+          Contents: '$(Build.SourcesDirectory)/Ubuntu_18_04_drop/pkgbuild/*.deb'
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/Ubuntu_18_04_Signed/'
+        displayName: 'Copy signed DEB package to staging'
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)/Ubuntu_18_04_Signed/'
+          ArtifactName: 'Ubuntu_18_04_Signed'
+          publishLocation: 'Container'
+        displayName: 'Copy signed DEB package to artifacts'
 
     - job: "Sign_Procmon_Ubuntu_20_04"
       pool: "Procmon-Ubuntu-20.04-Pool"
@@ -129,14 +142,14 @@ stages:
       - task: DownloadPipelineArtifact@2
         inputs:
           buildType: 'current'
-          artifactName: '20_04_drop'
-          targetPath: '$(Pipeline.Workspace)'
+          artifactName: 'Ubuntu_20_04_drop'
+          targetPath: '$(Build.SourcesDirectory)/Ubuntu_20_04_drop'
 
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
         displayName: 'ESRP CodeSigning DEB'
         inputs:
           ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-          FolderPath: '$(Pipeline.Workspace)/20.04'
+          FolderPath: '$(Build.SourcesDirectory)/Ubuntu_20.04_drop'
           Pattern: '*.deb'
           signConfigType: inlineSignParams
           inlineOperation: |
@@ -150,4 +163,16 @@ stages:
               }
             ]
 
+      - task: CopyFiles@2
+        inputs:
+          Contents: '$(Build.SourcesDirectory)/Ubuntu_20_04_drop/pkgbuild/*.deb'
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/Ubuntu_20_04_Signed/'
+        displayName: 'Copy signed DEB package to staging'
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)/Ubuntu_20_04_Signed/'
+          ArtifactName: 'Ubuntu_20_04_Signed'
+          publishLocation: 'Container'
+        displayName: 'Copy signed DEB package to artifacts'
  
