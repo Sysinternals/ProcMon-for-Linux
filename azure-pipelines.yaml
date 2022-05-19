@@ -99,13 +99,13 @@ stages:
         inputs:
           buildType: 'current'
           artifactName: 'Ubuntu_18_04_drop'
-          targetPath: '$(Build.SourcesDirectory)'
+          targetPath: '$(Build.SourcesDirectory)/Ubuntu_18_04_drop'
            
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
         displayName: 'ESRP CodeSigning DEB'
         inputs:
           ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-          FolderPath: '$(Build.SourcesDirectory)/Ubuntu_18.04_drop'
+          FolderPath: '$(Build.SourcesDirectory)/Ubuntu_18_04_drop'
           Pattern: '*.deb'
           signConfigType: inlineSignParams
           inlineOperation: |
@@ -149,7 +149,7 @@ stages:
         displayName: 'ESRP CodeSigning DEB'
         inputs:
           ConnectedServiceName: 'Sysinternals ESRP CodeSigning'
-          FolderPath: '$(Build.SourcesDirectory)/Ubuntu_20.04_drop'
+          FolderPath: '$(Build.SourcesDirectory)/Ubuntu_20_04_drop'
           Pattern: '*.deb'
           signConfigType: inlineSignParams
           inlineOperation: |
