@@ -5,3 +5,4 @@ steps:
    mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
    cmake ..
    make
+  displayName: "Build Procmon binaries"
