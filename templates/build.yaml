@@ -1,0 +1,8 @@
+steps:
+- script: |
+   export REVISION=$(Build.BuildId)
+   sed -i "s/999999/$REVISION/g" $(Build.SourcesDirectory)/CMakeLists.txt
+   mkdir $(Build.SourcesDirectory)/build && cd $(Build.SourcesDirectory)/build
+   cmake ..
+   make
+  displayName: "Build Procmon binaries"
