@@ -2,9 +2,12 @@ cmake_minimum_required (VERSION 3.14)
 project (procmon)
 
 # Set the project version number.
-set (procmon_VERSION_MAJOR 1)
-set (procmon_VERSION_MINOR 0)
-set (procmon_VERSION_PATCH 1)
+if (DEFINED ENV{VERSION})
+  project (procmon VERSION ENV{VERSION})
+else()
+  project (procmon VERSION 0.0.0)
+endif()
+
 
 # make ncurses a requirement
 find_package(Curses REQUIRED)
