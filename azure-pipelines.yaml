@@ -23,7 +23,12 @@ stages:
  - stage: "Build"
    jobs:
     - job: "Build_Procmon"
-      pool: "Procmon-Ubuntu-18.04-Pool"
+      pool: 
+        name: "Sysinternals-for-Linux"
+        demands:
+        - SYSINT_TOOL -equals procmon   
+        - SYSINT_DISTRIBUTION -equals ubuntu_18_04
+        - SYSINT_ARCHITECTURE -equals x86_64
       steps:
       - checkout: Procmon
       - template: templates/build.yaml
