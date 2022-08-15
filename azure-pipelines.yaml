@@ -24,11 +24,9 @@ stages:
    jobs:
     - job: "Build_Procmon"
       pool: 
-        name: "Sysinternals-for-Linux"
+        name: "Sysinternals-for-Linux-AME"
         demands:
-        - SYSINT_TOOL -equals procmon   
-        - SYSINT_DISTRIBUTION -equals ubuntu_18_04
-        - SYSINT_ARCHITECTURE -equals x86_64
+        - ImageOverride -equals procmon-ubuntu-20.04-build
       steps:
       - checkout: Procmon
       - template: templates/build.yaml
