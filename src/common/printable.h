@@ -9,12 +9,7 @@
 
 struct IPrintable
 {
-  public:
-    virtual const std::string Print() const
-    {
-        const IPrintable *p = this;
-        return std::string(typeid(p).name());
-    };
-
+public:
+    virtual const std::string Print() const;
     friend std::ostream& operator<<(std::ostream& stream, const IPrintable& printable);
 };
