@@ -1,12 +1,4 @@
 # Azure build pipelines for Procmon-for-Linux
-
-resources:
-  repositories:
-  - repository: Procmon
-    type: github
-    endpoint: sysinternals
-    name: sysinternals/procmon-for-linux
-
 trigger:
     branches:
       include:
@@ -28,5 +20,4 @@ stages:
         demands:
         - ImageOverride -equals procmon-ubuntu-20.04-build
       steps:
-      - checkout: Procmon
       - template: templates/build.yaml
