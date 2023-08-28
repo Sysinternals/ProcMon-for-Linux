@@ -43,14 +43,14 @@ void Screen::InitializeFormatters()
 void Screen::initScreen(std::shared_ptr<ProcmonConfiguration> config)
 {
     configPtr = config;
-    
+
     InitializeFormatters();
 
     root = initscr();           // start curses mode
     start_color();              // start color mode
     raw();                      // Line buffering disabled
     noecho();                   // disable character echo
-    halfdelay(1); 
+    halfdelay(1);
     nodelay(stdscr, true);      // make user input nonblocking
     curs_set(0);                // turn off cursor on UI
     mousemask(ALL_MOUSE_EVENTS, NULL);      // get all mouse events
@@ -83,7 +83,7 @@ void Screen::initScreen(std::shared_ptr<ProcmonConfiguration> config)
     initDetailView();
     initColumnView();
     initStatView();
-    initHelpView();    
+    initHelpView();
     initTimestampColumn();
     initPidColumn();
     initProcessColumn();
@@ -145,13 +145,13 @@ void Screen::run()
             std::cerr << "Failed to load tracefile " << config->GetTraceFilePath() << " with error: " << e.what();
             exit(-1);
         }
-        
+
         if(std::get<0>(startTime) == 0)
         {
             LOG(ERROR) << "Failed to load trace file" << config->GetTraceFilePath();
             return;
         }
-        
+
         // update config start time so that all timestamps are visualized correctly
         config->SetStartTime(std::get<0>(startTime));
         config->SetEpocStartTime(std::get<1>(startTime));
@@ -163,7 +163,7 @@ void Screen::run()
         // read from user
         input = getUserInput();
 
-        // if we have an active filter echo 
+        // if we have an active filter echo
         if(filterPromptActive)
         {
             // check to see if user has entered something new
@@ -215,7 +215,7 @@ void Screen::run()
             else
             {
                 // if we have read nothing this cycle but a KEY_RESIZE was on the last iteration the user has stopped moving the terminal
-                if(prevInput == KEY_RESIZE) 
+                if(prevInput == KEY_RESIZE)
                 {
                     resize();
 
@@ -233,7 +233,7 @@ void Screen::run()
                     displayEvents(eventList);
                 }
             }
-            
+
         }
         else if(searchPromptActive)
         {
@@ -306,7 +306,7 @@ void Screen::run()
                         case KEY_F(9):
                             running = false;
                             break;
-                        
+
                         case KEY_ENTER:
                         case 10:    // Enter Key
                             drawFooterFkeys();
@@ -328,16 +328,16 @@ void Screen::run()
                     // display current iteration of search
                     displaySearchEvents(idList, searchCount);
                 }
-                
+
                 // check to make sure that user has stopped entering into prompt
                 else if(((prevInput >= ' ' && prevInput <= '~') || (prevInput == KEY_DC || prevInput == KEY_BACKSPACE)) && filter.size() > 0)
                 {
                     // query datastore for matching event ids and move to line
                     idList = storageEngine->QueryIdsBySearch(filter, config->pids, screenConfig.getColumnSort(), screenConfig.getColumnAscending(), config->events);
                     LOG(INFO) << "Search returned" << idList.size() << "results";
-                    
+
                     // display search event
-                    displaySearchEvents(idList, searchCount);                    
+                    displaySearchEvents(idList, searchCount);
                 }
             }
         }
@@ -365,7 +365,7 @@ void Screen::run()
                         if(detailViewActive) closeDetailView();
                     }
                     break;
-                
+
                 case KEY_NPAGE:
                     if (scrollCount < MAX_CONTINUOUS_SCROLL || prevInput != KEY_NPAGE)
                     {
@@ -392,7 +392,7 @@ void Screen::run()
                     if(helpViewActive) closeHelpView();
                     else showHelpView();
                     break;
-                
+
                 case KEY_F(2):
                     if (columnSortViewActive) closeColumnView();
                     else if (!detailViewActive) showColumnView();
@@ -419,7 +419,7 @@ void Screen::run()
                     {
                         config->GetTracer()->SetRunState(TRACER_SUSPENDED);
                     }
-                    
+
                     drawFooterFkeys();
 
                     break;
@@ -436,13 +436,13 @@ void Screen::run()
                     if(statViewActive) closeStatView();
                     else showStatView();
                     break;
-                
+
                 // Quit Procmon
                 case 'q':
                 case KEY_F(9):
                     running = false;
                     break;
-                
+
                 // Esc Key
                 case 27:
                     // close any view open
@@ -461,7 +461,7 @@ void Screen::run()
                     if(getmouse(&mouseEvent) == NCURSES_OK) handleMouseEvent(&mouseEvent);
                     if(detailViewActive) showDetailView();
                     break;
-                
+
                 // CTRL + END
                 case 530:
                     // if the number of events is evenly divisible then the last "page" has nothing to visualize
@@ -472,9 +472,9 @@ void Screen::run()
                     else
                     {
                         currentPage = storageEngine->Size() / totalLines;
-                    }                    
+                    }
                     filter = "";
-                    
+
                     // get last page of events
                     eventList = storageEngine->QueryByEventsinPage(config->pids, currentPage, getTotalLines(), screenConfig.getColumnSort(), screenConfig.getColumnAscending(), config->events);
                     displayEvents(eventList);
@@ -557,7 +557,7 @@ void Screen::run()
             }
             previousTime = currentTime;
         }
-        
+
         // draw events in datastore to screen
         windowPrintFillRight(headerWin, HEADER_COLOR, 0, HEADER_HEIGHT-1, "%-22s%10d%-5s", config->GetEpocStartTime().c_str(), storageEngine->Size(), "");
 
@@ -575,8 +575,8 @@ void Screen::shutdownScreen()
     delwin(headerWin);
     delwin(footerWin);
     delwin(detailWin);
-    delwin(statWin);    
-    delwin(helpWin);        
+    delwin(statWin);
+    delwin(helpWin);
 
     // delete all columns created
     timeStampColumn->~Column();
@@ -698,7 +698,7 @@ void Screen::drawFooterFkeys()
     {
         wprintw(footerWin, " Resume");
     }
-    
+
     wattron(footerWin, COLOR_PAIR(LINE_COLOR));
     wprintw(footerWin, " F6");
     wattron(footerWin, COLOR_PAIR(MENU_COLOR));
@@ -734,7 +734,7 @@ void Screen::drawFilterPrompt(std::string filter)
     wprintw(footerWin, "  ");
     wattron(footerWin, COLOR_PAIR(MENU_COLOR));
     wprintw(footerWin, " Filter: ");
-    
+
     // add filter prompt
     windowPrintFill(footerWin, MENU_COLOR, getcurx(footerWin), 0, "%s", filter.c_str());
 
@@ -760,7 +760,7 @@ void Screen::drawSearchPrompt(std::string search, bool error)
     wprintw(footerWin, "  ");
     wattron(footerWin, COLOR_PAIR(MENU_COLOR));
     wprintw(footerWin, " Search: ");
-    
+
     // add filter prompt
     if(error) windowPrintFill(footerWin, MENU_COLOR_ERROR, getcurx(footerWin), 0, "%s", filter.c_str());
     else windowPrintFill(footerWin, MENU_COLOR, getcurx(footerWin), 0, "%s", filter.c_str());
@@ -773,7 +773,7 @@ void Screen::initTimestampColumn()
 {
     timeStampColumn = new Column(columnHeight, DEFAULT_TIME_COL_WIDTH, HEADER_HEIGHT, 0, " Timestamp");
     columnMap[ScreenConfiguration::time] = timeStampColumn;
-    
+
     // toggle header highlight based on screen configuration
     if(screenConfig.getColumnSort() == ScreenConfiguration::time) timeStampColumn->toggleHeaderHighlight();
 }
@@ -903,7 +903,7 @@ void Screen::scrollUp()
         {
             // page up to go back to previous page
             pageUp();
-            
+
             // set currentline to top of new page and adjust highlighting
             setLineColor(currentLine, LINE_COLOR);
             currentLine = totalLines;
@@ -1035,7 +1035,7 @@ void Screen::pageDown()
     {
         currentLine = eventList.size();
     }
-    
+
     // draw results from datastore to screen
     displayEvents(eventList);
 
@@ -1052,12 +1052,12 @@ EventFormatter* Screen::GetFormatter(ITelemetry lineData)
     {
         if((*it)->GetSyscall().compare(lineData.syscall)==0)
         {
-            ret=(*it); 
-            break; 
+            ret=(*it);
+            break;
         }
     }
 
-    return ret; 
+    return ret;
 }
 
 
@@ -1066,7 +1066,7 @@ int Screen::FindSyscall(std::string& syscallName)
     ProcmonConfiguration* config = configPtr.get();
     std::vector<struct SyscallSchema::SyscallSchema>& schema = config->GetSchema();
 
-    int i=0; 
+    int i=0;
     for(auto& syscall : schema)
     {
         if(syscallName.compare(syscall.syscallName)==0)
@@ -1085,8 +1085,8 @@ void Screen::addLine(ITelemetry lineData)
     if(format == NULL)
     {
         // If we dont find a formatter for that syscall, use the default formatter.
-        // Our default formatter is always the first item in the vector with a syscall name of "" 
-        std::vector<EventFormatter*>::iterator it = formatters.begin(); 
+        // Our default formatter is always the first item in the vector with a syscall name of ""
+        std::vector<EventFormatter*>::iterator it = formatters.begin();
         format = (*it);
     }
 
@@ -1094,8 +1094,8 @@ void Screen::addLine(ITelemetry lineData)
     pidColumn->addLine(" " + format->GetPID(lineData));
     processColumn->addLine(" " + format->GetProcess(lineData));
     operationColumn->addLine(" " + format->GetOperation(lineData));
-    resultColumn->addLine(" " + format->GetResult(lineData));     
-    durationColumn->addLine(" " + format->GetDuration(lineData)); 
+    resultColumn->addLine(" " + format->GetResult(lineData));
+    durationColumn->addLine(" " + format->GetDuration(lineData));
     detailColumn->addLine(" " + format->GetDetails(lineData));
 
     // increment total events on screen
@@ -1123,15 +1123,15 @@ int Screen::getCurrentPage()
 }
 
 void Screen::refreshScreen()
-{   
+{
     // refresh each main window individually
     wnoutrefresh(headerWin);
     wnoutrefresh(footerWin);
     wnoutrefresh(detailWin);
     wnoutrefresh(columnWin);
-    wnoutrefresh(statWin); 
-    wnoutrefresh(helpWin);     
-    
+    wnoutrefresh(statWin);
+    wnoutrefresh(helpWin);
+
     // refresh columns
     timeStampColumn->refreshColumn();
     pidColumn->refreshColumn();
@@ -1313,7 +1313,7 @@ void Screen::displaySearchEvents(std::vector<int> idList, int searchCount)
             eventList = storageEngine->QueryByEventsinPage(config->pids, getCurrentPage(), getTotalLines(), screenConfig.getColumnSort(), screenConfig.getColumnAscending(), config->events);
         }
         displayEvents(eventList);
-        
+
         // highlight with search color
         setLineColor(currentLine, SEARCH_HIGHLIGHT_COLOR);
     }
@@ -1341,14 +1341,14 @@ void Screen::toggleColumnSort(ScreenConfiguration::sort selectedColumn)
         // update column highlighting
         columnMap[columnSort]->toggleHeaderHighlight();
         columnMap[selectedColumn]->toggleHeaderHighlight();
-        
+
         // update current screen config
         screenConfig.setColumnSort(selectedColumn);
 
         // set column to sort by ascending
         screenConfig.setColumnAscending(true);
     }
-    
+
     // query new events and display
     if (idList.size() > 0)
     {
@@ -1390,7 +1390,7 @@ void Screen::showStatView()
     std::map<std::string, std::tuple<int, uint64_t>> syscallHitMap = configPtr->GetStorage()->GetHitmap();
 
 	typedef std::function<bool(std::pair<std::string, std::tuple<int, uint64_t>>, std::pair<std::string, std::tuple<int, uint64_t>>)> Comparator;
- 
+
 	Comparator compFunctor =
 			[](std::pair<std::string, std::tuple<int, uint64_t>> elem1 ,std::pair<std::string, std::tuple<int, uint64_t>> elem2)
 			{
@@ -1400,7 +1400,7 @@ void Screen::showStatView()
     std::set<std::pair<std::string, std::tuple<int, uint64_t>>, Comparator> sortedSyscalls(syscallHitMap.begin(), syscallHitMap.end(), compFunctor);
 
     std::set<std::pair<std::string, std::tuple<int, uint64_t>>>::iterator it;
-    for (it = sortedSyscalls.begin(); it != sortedSyscalls.end() && (y-2) <= 10; ++it) 
+    for (it = sortedSyscalls.begin(); it != sortedSyscalls.end() && (y-2) <= 10; ++it)
     {
         // convert to milliseconds
         double duration = ((double)std::get<1>(it->second)) / 1000000;
@@ -1520,14 +1520,14 @@ void Screen::showDetailView()
     if(format == NULL)
     {
         // If we dont find a formatter for that syscall, use the default formatter.
-        // Our default formatter is always the first item in the vector with a syscall name of "" 
-        std::vector<EventFormatter*>::iterator it = formatters.begin(); 
+        // Our default formatter is always the first item in the vector with a syscall name of ""
+        std::vector<EventFormatter*>::iterator it = formatters.begin();
         format = (*it);
     }
 
     // add event details to window
-    mvwprintw(detailWin, y++, 2, "%-19s%s", "Timestamp:", format->GetTimestamp(*event).c_str());     
-    mvwprintw(detailWin, y++, 2, "%-20s%s", "PID:", format->GetPID(*event).c_str()); 
+    mvwprintw(detailWin, y++, 2, "%-19s%s", "Timestamp:", format->GetTimestamp(*event).c_str());
+    mvwprintw(detailWin, y++, 2, "%-20s%s", "PID:", format->GetPID(*event).c_str());
     mvwprintw(detailWin, y++, 2, "%-20s%s", "Process:", format->GetProcess(*event).c_str());
     mvwprintw(detailWin, y++, 2, "%-20s%s", "Syscall:", format->GetOperation(*event).c_str());
     mvwprintw(detailWin, y++, 2, "%-20s%s", "Arguments:", format->GetDetails(*event).c_str());
@@ -1538,14 +1538,14 @@ void Screen::showDetailView()
 
     // grab stack trace for current event
     eventTrace = &event->stackTrace;
-    
+
 
     mvwprintw(detailWin, y++, 2, "Stack Trace:");
     // add stack trace to window
     for(int i = 0; i < eventTrace->userIPs.size() && y < detailViewHeight - 1; i++)
     {
         mvwprintw(detailWin, y++, 4, "0x%-8X %s", eventTrace->userIPs[i], eventTrace->userSymbols[i].c_str());
-    }    
+    }
 
     // draw border
     box(detailWin, '|', '_');
@@ -1562,7 +1562,7 @@ void Screen::closeDetailView()
 
     // hide panel to remove from screen
     hide_panel(detailPanel);
-    
+
     // redraw & refresh screen
     redrawScreen();
     refreshScreen();
@@ -1593,7 +1593,7 @@ void Screen::showColumnView()
         {
             windowPrintFill(columnWin, HIGHLIGHT_COLOR, 1, y, "%s", iter->second->getColumnName().c_str());
             columnSortLineSelection = (int)iter->first;
-        } 
+        }
         else windowPrintFill(columnWin, LINE_COLOR, 1, y, "%s", iter->second->getColumnName().c_str());
         y++;
     }
@@ -1614,9 +1614,9 @@ void Screen::showColumnView()
     wprintw(footerWin, " Done");
     wattron(footerWin, COLOR_PAIR(LINE_COLOR));
     wprintw(footerWin, " Esc");
-    
+
     windowPrintFill(footerWin, MENU_COLOR, getcurx(footerWin), 0, " Close ");
-    
+
 
     // refresh footer window
     wrefresh(footerWin);
@@ -1635,7 +1635,7 @@ void Screen::closeColumnView()
 
     // reprint footer
     drawFooterFkeys();
-    
+
     // redraw & refresh screen
     redrawScreen();
     refreshScreen();
@@ -1724,7 +1724,7 @@ void Screen::windowPrintFill(WINDOW * win, int colorPair, int x, int y, const ch
 {
     int cursorX;
     int maximumX;
-    
+
     // set background color
     wattron(win, COLOR_PAIR(colorPair));
 
@@ -1734,7 +1734,7 @@ void Screen::windowPrintFill(WINDOW * win, int colorPair, int x, int y, const ch
     // print to screen
     va_list args;
     va_start(args, fmt);
-    vwprintw(win, fmt, args);
+    vw_printw(win, fmt, args);
     va_end(args);
 
     // get current cursor position
@@ -1742,7 +1742,7 @@ void Screen::windowPrintFill(WINDOW * win, int colorPair, int x, int y, const ch
 
     // get maximum window coordinates
     maximumX = getmaxx(win);
-    
+
 
     // fill the rest of the line for screen
     for (int i = cursorX; i < maximumX; i++)
@@ -1758,7 +1758,7 @@ void Screen::windowPrintFillRight(WINDOW * win, int colorPair, int x, int y, con
 
     // get maximum size of line
     maximumX = getmaxx(win);
-    
+
     // allocate memory to print string
     buffer = (char*)malloc(sizeof(char) * maximumX);
 
