@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     * This is due to a conflict that leads to the consumer thread dieing when the system
     * function is executed.
     */
-    std::cout << "\33[?25l";
+    curs_set(0);
 
     // Configure logging
     el::Loggers::addFlag(el::LoggingFlag::HierarchicalLogging);
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     }
 
     // re-enable cursor before exiting Procmon
-    std::cout << "\33[?12l\33[?25h";
+    curs_set(1);
 
     return 0;
 }
