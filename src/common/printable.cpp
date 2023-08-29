@@ -3,6 +3,11 @@
 
 #include "printable.h"
 
+const std::string IPrintable::Print() const
+{
+    return typeid(this).name();
+}
+
 std::ostream& operator<<(std::ostream& stream, const IPrintable& printable)
 {
     stream << printable.Print();
