@@ -1,9 +1,21 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+/*
+    Procmon-for-Linux
+
+    Copyright (c) Microsoft Corporation
+
+    All rights reserved.
+
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ""Software""), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 #pragma once
 
-#include <BPF.h>
 #include <map>
 #include <memory>
 #include <vector>
@@ -37,15 +49,12 @@ private:
     // from eBPF to be processed into telemetry
     CancellableMessageQueue<SyscallEvent> EventQueue;
 
-    // The handle for the BPF program
-    std::unique_ptr<ebpf::BPF> BPF;
-
     std::vector<struct SyscallSchema::SyscallSchema> Schemas;
 
     std::map<int, void*> SymbolCacheMap;
 
     // use the same symbol settings as the defaults from bcc
-    static bcc_symbol_option SymbolOption;
+    //static bcc_symbol_option SymbolOption;
 
     void Poll();
     void Consume();
@@ -55,16 +64,16 @@ private:
     // Instance level callback
     void PerfCallback(void *rawMessage, int rawMessageSize);
     // static callback that passes the instance pointer in cbCookie
-    static void PerfCallbackWrapper(void *cbCookie, void *rawMessage, int rawMessageSize);
+    static void PerfCallbackWrapper(void *cbCookie, int cpu, void *rawMessage, uint32_t rawMessageSize);
 
     // Instance level callback
     void PerfLostCallback(uint64_t lost);
     // static callback that passes the instance pointer in cbCookie
-    static void PerfLostCallbackWrapper(void *cbCookie, uint64_t lost);
+    static void PerfLostCallbackWrapper(void *cbCookie, int cpu, uint64_t lost);
 public:
     EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents);
 
-    void AddPids(std::vector<int> pidsToTrace) override;   
+    void AddPids(std::vector<int> pidsToTrace) override;
 
     void SetRunState(int runState) override;
 };

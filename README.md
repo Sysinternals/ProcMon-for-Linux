@@ -1,15 +1,15 @@
 # Process Monitor for Linux (Preview) [![Build Status](https://dev.azure.com/sysinternals/Tools/_apis/build/status/Sysinternals.ProcMon-for-Linux?repoName=Sysinternals%2FProcMon-for-Linux&branchName=main)](https://dev.azure.com/sysinternals/Tools/_build/latest?definitionId=342&repoName=Sysinternals%2FProcMon-for-Linux&branchName=main)
-Process Monitor (Procmon) is a Linux reimagining of the classic Procmon tool from the Sysinternals suite of tools for Windows.  Procmon provides a convenient and efficient way for Linux developers to trace the syscall activity on the system.  
+Process Monitor (Procmon) is a Linux reimagining of the classic Procmon tool from the Sysinternals suite of tools for Windows.  Procmon provides a convenient and efficient way for Linux developers to trace the syscall activity on the system.
 
 ![Procmon in use](procmon.gif "Procmon in use")
 
 # Installation & Usage
 
 ## Requirements
-* OS: Ubuntu 18.04 lts 
+* OS: Ubuntu 18.04 lts
 * `cmake` >= 3.14 (build-time only)
 * `libsqlite3-dev` >= 3.22 (build-time only)
- 
+
 
 ## Install Procmon
 Checkout our [install instructions](INSTALL.md) for distribution specific steps to install Procmon.
@@ -33,7 +33,7 @@ cmake ..
 make
 ```
 
-### Building Procmon Packages 
+### Building Procmon Packages
 The distribution packages for Procmon for Linux are constructed utilizing `cpack`.
 
 To build a `deb` package of Procmon on Ubuntu simply run:
