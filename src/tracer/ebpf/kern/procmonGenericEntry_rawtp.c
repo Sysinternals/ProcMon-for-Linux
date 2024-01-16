@@ -20,6 +20,27 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#ifdef EBPF_CO_RE
+#include "vmlinux.h"
+#else
+#include <linux/version.h>
+#include <linux/bpf.h>
+#include <linux/socket.h>
+#include <linux/in.h>
+#include <linux/in6.h>
+#include <linux/fcntl.h>
+#include <sys/socket.h>
+#include <linux/string.h>
+#include <asm/ptrace.h>
+#include <linux/types.h>
+#endif
+
+#include <stdint.h>
+#include <bpf_helpers.h>
+#include <bpf_core_read.h>
+#include <asm/unistd_64.h>
+
+#include <sysinternalsEBPF_common.h>
 #include "procmonEBPF_common.h"
 #include <sysinternalsEBPF_helpers.c>
 
@@ -46,8 +67,41 @@ SEC("raw_tracepoint/sys_enter")
 __attribute__((flatten))
 int genericRawEnter(struct bpf_our_raw_tracepoint_args *ctx)
 {
-
     {BPF_PRINTK("sys_enter\n");}
+
+    uint32_t cpuId = bpf_get_smp_processor_id();
+    uint64_t pidTid = bpf_get_current_pid_tgid();
+    uint64_t pid = pidTid >> 32;
+    argsStruct* eventArgs = NULL;
+    struct pt_regs* regs = NULL;
+
+    eventArgs = bpf_map_lookup_elem(&argsStorageMap, &cpuId);
+    if (!eventArgs)
+    {
+        return 0;
+    }
+
+    regs = (struct pt_regs *)ctx->args[0];
+    if (!set_eventArgs(eventArgs->a, regs))
+    {
+        BPF_PRINTK("set_eventArgs failed\n");
+    }
+
+    struct SyscallEvent* sysEntry = bpf_map_lookup_elem(&eventStorageMap, &cpuId);
+    if(!sysEntry)
+    {
+        BPF_PRINTK("sys_enter: FAIL 1\n");
+        return 0;
+    }
+
+    sysEntry->pid = pid;
+    sysEntry->sysnum = ctx->args[1];
+    bpf_get_current_comm(&sysEntry->comm, sizeof(sysEntry->comm));
+    sysEntry->userStackCount = bpf_get_stack(ctx, &sysEntry->userStack, MAX_STACK_FRAMES * sizeof(uint64_t), BPF_F_USER_STACK) / sizeof(uint64_t);
+    sysEntry->timestamp = bpf_ktime_get_ns();
+
+
+    eventOutput((void*)ctx, &eventMap, BPF_F_CURRENT_CPU, sysEntry, sizeof(struct SyscallEvent));
 
     return 0;
 }

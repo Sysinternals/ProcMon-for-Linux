@@ -24,40 +24,14 @@
 #include <vector>
 #include <iostream>
 
+#include "kern/procmonEBPF_common.h"
+
 namespace SyscallSchema
 {
-    enum class ArgTag
-    {
-        UNKNOWN, // Catch all for cases where arg type isn't known yet.
-        INT,
-        UNSIGNED_INT,
-        SIZE_T,
-        PID_T,
-        LONG,
-        UNSIGNED_LONG,
-        CHAR_PTR,
-        CONST_CHAR_PTR,
-        FD,
-        PTR,
-        UINT32
-    };
-
-    struct SyscallSchema
-    {
-        // We should probably just be passing the syscall number back and forth instead.
-        char syscallName[100];
-        // It's probably not necessary to pass this info to kernel land and we can just store
-        // it in an userland only map to be used by the UI.
-        char argNames[6][100];
-        // The key data structure necessary to infer what needs to be done.
-        enum ArgTag types[6];
-        int usedArgCount;
-    };
-
     class Utils
     {
     public:
-        static std::map<std::string, ArgTag> ArgTypeStringToArgTag;
+        static std::map<std::string, ProcmonArgTag> ArgTypeStringToArgTag;
         static std::map<std::string, int> SyscallNameToNumber;
         static std::map<int, std::string> SyscallNumberToName;
         static std::vector<std::string> Linux64PointerSycalls;
@@ -71,19 +45,19 @@ namespace SyscallSchema
                 return -1;
         }
 
-        static ArgTag GetArgTagForArg(const std::string &argumentName, const std::string &argumentType)
+        static ProcmonArgTag GetArgTagForArg(const std::string &argumentName, const std::string &argumentType)
         {
             auto maybeTag = ArgTypeStringToArgTag.find(argumentType);
             if (maybeTag != ArgTypeStringToArgTag.end())
                 return maybeTag->second;
             else if (argumentName == "fd")
-                return ArgTag::FD;
+                return ProcmonArgTag::FD;
             else if (argumentType.find("*") != std::string::npos)
             {
-                return ArgTag::PTR;
+                return ProcmonArgTag::PTR;
             }
             else
-                return ArgTag::UNKNOWN;
+                return ProcmonArgTag::NOTKNOWN;
         }
 
         static std::vector<struct SyscallSchema> CollectSyscallSchema()

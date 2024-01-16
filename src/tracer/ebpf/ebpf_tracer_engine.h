@@ -23,14 +23,26 @@
 #include <elf.h>
 
 #include "syscall_schema.h"
-#include "bpf_prog.h"
-#include "raw_ebpf_event.h"
+//#include "bpf_prog.h"
+#include "kern/procmonEBPF_common.h"
 #include "../../common/cancellable_message_queue.h"
 #include "../tracer_engine.h"
 #include "../../common/event.h"
 #include "../../storage/storage_engine.h"
 
 #define MAX_PIDS           10
+
+#define STAT_MAX_ITEMS      10
+#define CONFIG_ITEMS        1
+
+#define KERN_4_17_5_1_OBJ       "procmonEBPFkern4.17-5.1.o"
+#define KERN_5_2_OBJ            "procmonEBPFkern5.2.o"
+#define KERN_5_3_5_5_OBJ        "procmonEBPFkern5.3-5.5.o"
+#define KERN_5_6__OBJ           "procmonEBPFkern5.6-.o"
+#define KERN_4_17_5_1_CORE_OBJ  "procmonEBPFkern4.17-5.1_core.o"
+#define KERN_5_2_CORE_OBJ       "procmonEBPFkern5.2_core.o"
+#define KERN_5_3_5_5_CORE_OBJ   "procmonEBPFkern5.3-5.5_core.o"
+#define KERN_5_6__CORE_OBJ      "procmonEBPFkern5.6-_core.o"
 
 class EbpfTracerEngine : public ITracerEngine
 {
@@ -72,6 +84,7 @@ private:
     static void PerfLostCallbackWrapper(void *cbCookie, int cpu, uint64_t lost);
 public:
     EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents);
+    void Initialize() override;
 
     void AddPids(std::vector<int> pidsToTrace) override;
 

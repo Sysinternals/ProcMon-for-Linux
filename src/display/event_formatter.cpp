@@ -113,7 +113,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
         args+=item.argNames[i];
         args+="=";
 
-        if(item.types[i]==SyscallSchema::ArgTag::INT || item.types[i]==SyscallSchema::ArgTag::LONG)
+        if(item.types[i]==SyscallSchema::ProcmonArgTag::INT || item.types[i]==SyscallSchema::ProcmonArgTag::LONG)
         {
             long val = 0;
             int size = sizeof(long);
@@ -121,7 +121,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
             args+=std::to_string(val);
             readOffset+=size;
         }
-        else if(item.types[i]==SyscallSchema::ArgTag::UINT32)
+        else if(item.types[i]==SyscallSchema::ProcmonArgTag::UINT32)
         {
             uint32_t val = 0;
             int size = sizeof(uint32_t);
@@ -129,7 +129,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
             args+=std::to_string(val);
             readOffset+=size;
         }
-        else if (item.types[i] == SyscallSchema::ArgTag::UNSIGNED_INT || item.types[i] == SyscallSchema::ArgTag::UNSIGNED_LONG || item.types[i] == SyscallSchema::ArgTag::SIZE_T || item.types[i] == SyscallSchema::ArgTag::PID_T)
+        else if (item.types[i] == SyscallSchema::ProcmonArgTag::UNSIGNED_INT || item.types[i] == SyscallSchema::ProcmonArgTag::UNSIGNED_LONG || item.types[i] == SyscallSchema::ProcmonArgTag::SIZE_T || item.types[i] == SyscallSchema::ArgTag::PID_T)
         {
             unsigned long val = 0;
             int size = sizeof(unsigned long);
@@ -137,7 +137,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
             args+=std::to_string(val);
             readOffset+=size;
         }
-        else if (item.types[i] == SyscallSchema::ArgTag::CHAR_PTR || item.types[i] == SyscallSchema::ArgTag::CONST_CHAR_PTR)
+        else if (item.types[i] == SyscallSchema::ProcmonArgTag::CHAR_PTR || item.types[i] == SyscallSchema::ProcmonArgTag::CONST_CHAR_PTR)
         {
             if(event.syscall.compare("read") == 0)
             {
@@ -182,7 +182,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
                 args += ss.str();
             }
         }
-        else if (item.types[i] == SyscallSchema::ArgTag::FD)
+        else if (item.types[i] == SyscallSchema::ProcmonArgTag::FD)
         {
             int size=MAX_BUFFER/6;
             char buff[size];
@@ -190,7 +190,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
             readOffset+=size;
             args+=buff;
         }
-        else if (item.types[i] == SyscallSchema::ArgTag::PTR)
+        else if (item.types[i] == SyscallSchema::ProcmonArgTag::PTR)
         {
             unsigned long val = 0;
             int size = sizeof(unsigned long);

@@ -25,18 +25,6 @@ extern "C"
 #include <sysinternalsEBPFshared.h>
 }
 
-#define STAT_MAX_ITEMS      10
-#define CONFIG_ITEMS        1
-
-#define KERN_4_17_5_1_OBJ       "procmonEBPFkern4.17-5.1.o"
-#define KERN_5_2_OBJ            "procmonEBPFkern5.2.o"
-#define KERN_5_3_5_5_OBJ        "procmonEBPFkern5.3-5.5.o"
-#define KERN_5_6__OBJ           "procmonEBPFkern5.6-.o"
-#define KERN_4_17_5_1_CORE_OBJ  "procmonEBPFkern4.17-5.1_core.o"
-#define KERN_5_2_CORE_OBJ       "procmonEBPFkern5.2_core.o"
-#define KERN_5_3_5_5_CORE_OBJ   "procmonEBPFkern5.3-5.5_core.o"
-#define KERN_5_6__CORE_OBJ      "procmonEBPFkern5.6-_core.o"
-
 double g_bootSecSinceEpoch = 0;
 int machineId = 0;
 
@@ -121,8 +109,114 @@ void SetBootTime()
     }
 }
 
+
+void EbpfTracerEngine::Initialize()
+{
+    PollingThread = std::thread(&EbpfTracerEngine::Poll, this);
+    ConsumerThread = std::thread(&EbpfTracerEngine::Consume, this);
+}
+
+
 EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents)
     : ITracerEngine(storageEngine, targetEvents), Schemas(SyscallSchema::Utils::CollectSyscallSchema())
+{
+
+/*    RunState = TRACER_RUNNING;
+
+    // TODO: INIT THE BPF STUFF
+    // Create all BPF maps early to be stored in external table storage.
+    auto config_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "config", sizeof(int), sizeof(uint64_t), CONFIG_ITEMS, 0);
+    auto pid_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "pids", sizeof(int), sizeof(uint64_t), MAX_PIDS, 0);
+    auto runstate_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "runstate", sizeof(int), sizeof(uint64_t), 1, 0);
+    auto syscalls_fd = bcc_create_map(BPF_MAP_TYPE_HASH, "syscalls", sizeof(int), sizeof(SyscallSchema::SyscallSchema), 345, 0);
+    if (config_fd < 0 || syscalls_fd < 0 || runstate_fd < 0 || pid_fd < 0) {}
+        // TODO: Error
+
+    // Create external table storage and populate it with BPF maps.
+    std::unique_ptr<ebpf::TableStorage> tblstore = ebpf::createSharedTableStorage();
+
+    ebpf::Path syscalls_path({"syscalls"});
+    ebpf::Path pid_path({"pids"});
+    ebpf::Path config_path({"config"});
+    ebpf::Path runstate_path({"runstate"});
+
+    ebpf::TableDesc runstate_desc("runstate", ebpf::FileDesc(runstate_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), 1, 0);
+    ebpf::TableDesc config_desc("config", ebpf::FileDesc(config_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), CONFIG_ITEMS, 0);
+    ebpf::TableDesc pid_desc("pids", ebpf::FileDesc(pid_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), MAX_PIDS, 0);
+    ebpf::TableDesc syscalls_desc("syscalls", ebpf::FileDesc(syscalls_fd), BPF_MAP_TYPE_HASH, sizeof(int), sizeof(SyscallSchema::SyscallSchema), 320, 0);
+
+    tblstore->Insert(config_path, std::move(config_desc));
+    tblstore->Insert(pid_path, std::move(pid_desc));
+    tblstore->Insert(syscalls_path, std::move(syscalls_desc));
+    tblstore->Insert(runstate_path, std::move(runstate_desc));
+
+    // Initialize BPF object with prepared table storage.
+    BPF = std::make_unique<ebpf::BPF>(0, tblstore.release());
+    BPF->init(bpf_prog);
+    BPF->get_array_table<uint64_t>("config").update_value(0, getpid());
+    BPF->get_array_table<uint64_t>("runstate").update_value(0, RunState);             // Start procmon in a resumed state. We update this to suspended state if user chooses from TUI.
+    auto schemaTable = BPF->get_hash_table<int, ::SyscallSchema::SyscallSchema>("syscalls");
+
+    // Initialize pids map to -1
+    for(int i=0; i<MAX_PIDS; i++)
+    {
+        BPF->get_array_table<uint64_t>("pids").update_value(i, -1);
+    }
+
+    for (auto event : targetEvents)
+    {
+        auto schemaItr = std::find_if(Schemas.begin(), Schemas.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
+        if(schemaItr != Schemas.end())
+        {
+            auto code = schemaTable.update_value(::SyscallSchema::Utils::GetSyscallNumberForName(event.Name()), std::move(*schemaItr.base()));
+            if (code.code())
+                std::cout << "ERROR" << std::endl;
+        }
+    }
+
+    BPF->open_perf_buffer("events", &EbpfTracerEngine::PerfCallbackWrapper, &EbpfTracerEngine::PerfLostCallbackWrapper, (void*)this, 64);
+    PollingThread = std::thread(&EbpfTracerEngine::Poll, this);
+    ConsumerThread = std::thread(&EbpfTracerEngine::Consume, this);
+
+    BPF->attach_tracepoint("raw_syscalls:sys_enter", sys_enter_bpf_prog_name);
+    BPF->attach_tracepoint("raw_syscalls:sys_exit", sys_exit_bpf_prog_name);
+*/
+}
+
+void EbpfTracerEngine::SetRunState(int runState)
+{
+    RunState = runState;
+    //BPF->get_array_table<uint64_t>("runstate").update_value(0, runState);
+}
+
+EbpfTracerEngine::~EbpfTracerEngine()
+{
+    EventQueue.cancel();
+    PollingThread.join();
+    ConsumerThread.join();
+}
+
+void EbpfTracerEngine::PerfCallbackWrapper(/* EbpfTracerEngine* */void *cbCookie, int cpu, void* rawMessage, uint32_t rawMessageSize)
+{
+    static_cast<EbpfTracerEngine *>(cbCookie)->PerfCallback(rawMessage, rawMessageSize);
+}
+
+void EbpfTracerEngine::PerfCallback(void *rawMessage, int rawMessageSize)
+{
+    EventQueue.push(*static_cast<SyscallEvent*>(rawMessage));
+}
+
+void EbpfTracerEngine::PerfLostCallbackWrapper(void *cbCookie, int cpu, uint64_t lost)
+{
+    static_cast<EbpfTracerEngine*>(cbCookie)->PerfLostCallback(lost);
+}
+
+void EbpfTracerEngine::PerfLostCallback(uint64_t lost)
+{
+    return;
+}
+
+void EbpfTracerEngine::Poll()
 {
     bool btfEnabled = true;
 
@@ -136,8 +230,7 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
 
     const ebpfTelemetryMapObject    mapObjects[] =
     {
-        {"UDPrecvAge", 0, NULL, NULL},
-        {"UDPsendAge", 0, NULL, NULL}
+        {"syscallsMap", 0, NULL, NULL}
     };
 
     // this holds the FDs for the above maps
@@ -249,114 +342,8 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
 
     const char* const argv[] = {"procmon"};
 
-    int ret = telemetryStart( &procmonConfig, PerfCallbackWrapper, PerfLostCallbackWrapper, telemetryReady, configChange, NULL, (const char **)argv, mapFds );
+    int ret = telemetryStart( &procmonConfig, PerfCallbackWrapper, PerfLostCallbackWrapper, telemetryReady, configChange, this, (const char **)argv, mapFds );
 
-/*    RunState = TRACER_RUNNING;
-
-    // TODO: INIT THE BPF STUFF
-    // Create all BPF maps early to be stored in external table storage.
-    auto config_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "config", sizeof(int), sizeof(uint64_t), CONFIG_ITEMS, 0);
-    auto pid_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "pids", sizeof(int), sizeof(uint64_t), MAX_PIDS, 0);
-    auto runstate_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "runstate", sizeof(int), sizeof(uint64_t), 1, 0);
-    auto syscalls_fd = bcc_create_map(BPF_MAP_TYPE_HASH, "syscalls", sizeof(int), sizeof(SyscallSchema::SyscallSchema), 345, 0);
-    if (config_fd < 0 || syscalls_fd < 0 || runstate_fd < 0 || pid_fd < 0) {}
-        // TODO: Error
-
-    // Create external table storage and populate it with BPF maps.
-    std::unique_ptr<ebpf::TableStorage> tblstore = ebpf::createSharedTableStorage();
-
-    ebpf::Path syscalls_path({"syscalls"});
-    ebpf::Path pid_path({"pids"});
-    ebpf::Path config_path({"config"});
-    ebpf::Path runstate_path({"runstate"});
-
-    ebpf::TableDesc runstate_desc("runstate", ebpf::FileDesc(runstate_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), 1, 0);
-    ebpf::TableDesc config_desc("config", ebpf::FileDesc(config_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), CONFIG_ITEMS, 0);
-    ebpf::TableDesc pid_desc("pids", ebpf::FileDesc(pid_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), MAX_PIDS, 0);
-    ebpf::TableDesc syscalls_desc("syscalls", ebpf::FileDesc(syscalls_fd), BPF_MAP_TYPE_HASH, sizeof(int), sizeof(SyscallSchema::SyscallSchema), 320, 0);
-
-    tblstore->Insert(config_path, std::move(config_desc));
-    tblstore->Insert(pid_path, std::move(pid_desc));
-    tblstore->Insert(syscalls_path, std::move(syscalls_desc));
-    tblstore->Insert(runstate_path, std::move(runstate_desc));
-
-    // Initialize BPF object with prepared table storage.
-    BPF = std::make_unique<ebpf::BPF>(0, tblstore.release());
-    BPF->init(bpf_prog);
-    BPF->get_array_table<uint64_t>("config").update_value(0, getpid());
-    BPF->get_array_table<uint64_t>("runstate").update_value(0, RunState);             // Start procmon in a resumed state. We update this to suspended state if user chooses from TUI.
-    auto schemaTable = BPF->get_hash_table<int, ::SyscallSchema::SyscallSchema>("syscalls");
-
-    // Initialize pids map to -1
-    for(int i=0; i<MAX_PIDS; i++)
-    {
-        BPF->get_array_table<uint64_t>("pids").update_value(i, -1);
-    }
-
-    for (auto event : targetEvents)
-    {
-        auto schemaItr = std::find_if(Schemas.begin(), Schemas.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
-        if(schemaItr != Schemas.end())
-        {
-            auto code = schemaTable.update_value(::SyscallSchema::Utils::GetSyscallNumberForName(event.Name()), std::move(*schemaItr.base()));
-            if (code.code())
-                std::cout << "ERROR" << std::endl;
-        }
-    }
-
-    BPF->open_perf_buffer("events", &EbpfTracerEngine::PerfCallbackWrapper, &EbpfTracerEngine::PerfLostCallbackWrapper, (void*)this, 64);
-    PollingThread = std::thread(&EbpfTracerEngine::Poll, this);
-    ConsumerThread = std::thread(&EbpfTracerEngine::Consume, this);
-
-    BPF->attach_tracepoint("raw_syscalls:sys_enter", sys_enter_bpf_prog_name);
-    BPF->attach_tracepoint("raw_syscalls:sys_exit", sys_exit_bpf_prog_name);
-*/
-}
-
-void EbpfTracerEngine::SetRunState(int runState)
-{
-    RunState = runState;
-    //BPF->get_array_table<uint64_t>("runstate").update_value(0, runState);
-}
-
-EbpfTracerEngine::~EbpfTracerEngine()
-{
-    EventQueue.cancel();
-    PollingThread.join();
-    ConsumerThread.join();
-}
-
-void EbpfTracerEngine::PerfCallbackWrapper(/* EbpfTracerEngine* */void *cbCookie, int cpu, void* rawMessage, uint32_t rawMessageSize)
-{
-    static_cast<EbpfTracerEngine *>(cbCookie)->PerfCallback(rawMessage, rawMessageSize);
-}
-
-void EbpfTracerEngine::PerfCallback(void *rawMessage, int rawMessageSize)
-{
-    EventQueue.push(*static_cast<SyscallEvent*>(rawMessage));
-}
-
-void EbpfTracerEngine::PerfLostCallbackWrapper(void *cbCookie, int cpu, uint64_t lost)
-{
-    static_cast<EbpfTracerEngine*>(cbCookie)->PerfLostCallback(lost);
-}
-
-void EbpfTracerEngine::PerfLostCallback(uint64_t lost)
-{
-    return;
-}
-
-void EbpfTracerEngine::Poll()
-{
-    while (!EventQueue.isCancelled())
-    {
-        //if (BPF->poll_perf_buffer("events", 500) == -1)
-        //{
-            // either we closed the perf buffer
-            // or something else did -> get out
-          //  break;
-       // }
-    }
 
     // Any cleanup?
     return;
@@ -398,7 +385,7 @@ void EbpfTracerEngine::Consume()
         std::string syscall = SyscallSchema::Utils::SyscallNumberToName[event->sysnum];
         ITelemetry tel;
         tel.pid = event->pid;
-        tel.stackTrace = GetStackTraceForIPs(event->pid, event->kernelStack, event->kernelStackCount, event->userStack, event->userStackCount);
+        //tel.stackTrace = GetStackTraceForIPs(event->pid, event->kernelStack, event->kernelStackCount, event->userStack, event->userStackCount);
         tel.comm = std::string(event->comm);
         tel.processName = std::string(event->comm);
         tel.syscall = syscall;

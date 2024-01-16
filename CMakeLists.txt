@@ -142,6 +142,8 @@ add_executable(procmon
              )
 
 target_include_directories(procmon PUBLIC
+                           /opt/sysinternalsEBPF/libbpf
+                           #"/usr/include/bpf"
                            "${PROJECT_BINARY_DIR}/src/"
                            "${CMAKE_SOURCE_DIR}/vendor/sqlite3"
                            "/opt/sysinternalsEBPF/ebpfKern"

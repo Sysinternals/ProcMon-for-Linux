@@ -191,6 +191,7 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
 
     // Initialize Tracer
     _tracerEngine = std::unique_ptr<ITracerEngine>(new EbpfTracerEngine(_storageEngine, events));
+    _tracerEngine->Initialize();
     _tracerEngine->AddEvent(events);
     _tracerEngine->AddPids(pids);
 

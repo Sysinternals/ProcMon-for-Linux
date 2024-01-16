@@ -16,19 +16,19 @@
 
 #include "syscall_schema.h"
 
-std::map<std::string, SyscallSchema::ArgTag> SyscallSchema::Utils::ArgTypeStringToArgTag = {
-        {"fd", ArgTag::FD},
-        {"int", ArgTag::INT},
-        {"unsigned int", ArgTag::UNSIGNED_INT},
-        {"size_t", ArgTag::SIZE_T},
-        {"pid_t", ArgTag::PID_T},
-        {"long", ArgTag::LONG},
-        {"unsigned long", ArgTag::UNSIGNED_LONG},
-        {"char *", ArgTag::CHAR_PTR},
-        {"const char *", ArgTag::CONST_CHAR_PTR},
-        {"u32", ArgTag::UINT32},
-        {"unsigned", ArgTag::UNSIGNED_INT},
-        {"umode_t", ArgTag::INT}
+std::map<std::string, SyscallSchema::ProcmonArgTag> SyscallSchema::Utils::ArgTypeStringToArgTag = {
+        {"fd", ProcmonArgTag::FD},
+        {"int", ProcmonArgTag::INT},
+        {"unsigned int", ProcmonArgTag::UNSIGNED_INT},
+        {"size_t", ProcmonArgTag::SIZE_T},
+        {"pid_t", ProcmonArgTag::PID_T},
+        {"long", ProcmonArgTag::LONG},
+        {"unsigned long", ProcmonArgTag::UNSIGNED_LONG},
+        {"char *", ProcmonArgTag::CHAR_PTR},
+        {"const char *", ProcmonArgTag::CONST_CHAR_PTR},
+        {"u32", ProcmonArgTag::UINT32},
+        {"unsigned", ProcmonArgTag::UNSIGNED_INT},
+        {"umode_t", ProcmonArgTag::INT}
     };
 
 std::map<std::string, int> SyscallSchema::Utils::SyscallNameToNumber = {

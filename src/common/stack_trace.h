@@ -34,12 +34,12 @@ struct StackTrace
     {
         std::string ret;
 
-        ret += std::to_string(userIPs[0]) + "$" + userSymbols[0];
+        /*ret += std::to_string(userIPs[0]) + "$" + userSymbols[0];
 
         for(int i = 1; i < userIPs.size(); i++)
         {
             ret += ";" + std::to_string(userIPs[i]) + "$" + userSymbols[i];
-        }
+        }*/
         return ret;
     }
 

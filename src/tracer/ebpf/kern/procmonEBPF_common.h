@@ -29,28 +29,6 @@
 #define UDP_HASH_SIZE           (128 * 1024)
 
 
-#ifdef EBPF_CO_RE
-#include "vmlinux.h"
-#else
-#include <linux/version.h>
-#include <linux/bpf.h>
-#include <linux/socket.h>
-#include <linux/in.h>
-#include <linux/in6.h>
-#include <linux/fcntl.h>
-#include <sys/socket.h>
-#include <linux/string.h>
-#include <asm/ptrace.h>
-#endif
-
-#include <sysinternalsEBPF_common.h>
-#include <stdint.h>
-#include <bpf_helpers.h>
-#include <bpf_core_read.h>
-#include <asm/unistd_64.h>
-#include <sysinternalsEBPFshared.h>
-//#include "sysmon_defs.h"
-
 #define LINUX_MAX_EVENT_SIZE (65536 - 24)
 
 // defining file mode locally to remove requirement for heavy includes.
@@ -59,6 +37,51 @@
 #define S_IFREG      0100000
 #define S_IFBLK      0060000
 #define S_IFSOCK     0140000
+
+#define MAX_BUFFER 128
+#define MAX_STACK_FRAMES 32
+#define MAX_PROC 512
+
+struct SyscallEvent
+{
+    pid_t pid;
+    uint32_t sysnum;
+    uint64_t timestamp;
+    uint64_t duration_ns;
+    uint64_t userStack[MAX_STACK_FRAMES];
+    uint64_t userStackCount;
+    uint64_t ret;
+    char comm[16];
+    unsigned char buffer [MAX_BUFFER];
+};
+
+enum ProcmonArgTag
+{
+    NOTKNOWN, // Catch all for cases where arg type isn't known yet.
+    INT,
+    UNSIGNED_INT,
+    SIZE_T,
+    PID_T,
+    LONG,
+    UNSIGNED_LONG,
+    CHAR_PTR,
+    CONST_CHAR_PTR,
+    FD,
+    PTR,
+    UINT32
+};
+
+struct SyscallSchema
+{
+    // We should probably just be passing the syscall number back and forth instead.
+    char syscallName[100];
+    // It's probably not necessary to pass this info to kernel land and we can just store
+    // it in an userland only map to be used by the UI.
+    char argNames[6][100];
+    // The key data structure necessary to infer what needs to be done.
+    enum ProcmonArgTag types[6];
+    int usedArgCount;
+};
 
 // create a map to hold the event as we build it - too big for stack
 // one entry per cpu
@@ -89,22 +112,12 @@ struct {
     __uint(max_entries, MAX_PROC);
 } packetStorageMap SEC(".maps");
 
-// create a map to hold the UDP recv age information
+// create a map to hold the syscall information
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, UDP_HASH_SIZE);
-    __type(key, uint64_t);
-    __type(value, uint64_t);
-} UDPrecvAge SEC(".maps");
-
-
-// create a map to hold the UDP send age information
-struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, UDP_HASH_SIZE);
-    __type(key, uint64_t);
-    __type(value, uint64_t);
-} UDPsendAge SEC(".maps");
-
+    __uint(max_entries, 345);
+    __type(key, uint32_t);
+    __type(value, sizeof(struct SyscallSchema));
+} syscallsMap SEC(".maps");
 
 #endif
