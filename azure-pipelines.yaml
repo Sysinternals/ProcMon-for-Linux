@@ -26,7 +26,7 @@ stages:
 
       - script: |
           chmod +x .container/install-ubuntu-dependencies.sh
-          .devcontainer/install-ubuntu-dependencies.sh
+          .container/install-ubuntu-dependencies.sh
         displayName: "Install pre-reqs for Ubuntu"
 
       - template: templates/build.yaml
