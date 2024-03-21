@@ -33,6 +33,8 @@ sudo apt-get install -y --no-install-recommends \
         netperf \
         iperf \
         libfl-dev \
+        clang \
+        llvm \
         liblocale-gettext-perl
 
 # install debbuild
