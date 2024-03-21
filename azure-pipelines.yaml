@@ -7,7 +7,7 @@ trigger:
       exclude:
         - dev/*
         - test/*
-  
+
 pr:
 - main
 
@@ -15,9 +15,18 @@ stages:
  - stage: "Build"
    jobs:
     - job: "Build_Procmon"
-      pool: 
-        name: "Sysinternals-for-Linux-AME"
-        demands:
-        - ImageOverride -equals procmon-ubuntu-20.04-build
+      pool:
+        vmImage: "ubuntu-20.04"
       steps:
+      - script: |
+          clang --version
+          clang++ --version
+          gcc --version
+        displayName: 'List compiler versions'
+
+      - script: |
+          chmod +x .container/install-ubuntu-dependencies.sh
+          devcontainer/install-ubuntu-dependencies.sh
+        displayName: "Install pre-reqs for Ubuntu"
+
       - template: templates/build.yaml
