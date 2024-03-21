@@ -11,6 +11,8 @@ sudo apt -y install software-properties-common
 sudo add-apt-repository "deb http://security.ubuntu.com/ubuntu xenial-security main"
 sudo apt-get update
 
+sudo apt remove -y clang-11
+
 sudo apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
@@ -33,8 +35,6 @@ sudo apt-get install -y --no-install-recommends \
         netperf \
         iperf \
         libfl-dev \
-        clang \
-        llvm \
         liblocale-gettext-perl
 
 # install debbuild
