@@ -29,6 +29,9 @@ stages:
       - script: |
           chmod +x .container/install-ubuntu-dependencies.sh
           .container/install-ubuntu-dependencies.sh
+
+          find /usr/lib /usr/local/lib -name 'libclangBasic.*'
+          ls /usr/lib/llvm*/lib
         displayName: "Install pre-reqs for Ubuntu"
 
       - template: templates/build.yaml
