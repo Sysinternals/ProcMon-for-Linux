@@ -22,7 +22,7 @@ stages:
           clang --version
           clang++ --version
           gcc --version
-          find /usr/lib /usr/local/lib -name 'libclangBasic.*'
+          find /usr/lib /usr/local/lib -name 'clang-cpp'
           ls /usr/lib/llvm*/lib
         displayName: 'List compiler versions'
 
@@ -31,7 +31,7 @@ stages:
           chmod +x .container/install-ubuntu-dependencies.sh
           .container/install-ubuntu-dependencies.sh
 
-          find /usr/lib /usr/local/lib -name 'libclangBasic.*'
+          find /usr/lib /usr/local/lib -name 'clang-cpp'
           ls /usr/lib/llvm*/lib
         displayName: "Install pre-reqs for Ubuntu"
 
