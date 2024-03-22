@@ -23,6 +23,7 @@ stages:
           clang++ --version
           gcc --version
           find /usr/lib /usr/local/lib -name 'libclangBasic.*'
+          ls /usr/lib/llvm*/lib
         displayName: 'List compiler versions'
 
       - script: |
