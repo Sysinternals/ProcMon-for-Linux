@@ -27,6 +27,7 @@ stages:
         displayName: 'List compiler versions'
 
       - script: |
+          export LLVM_LIBRARY_DIRS=/usr/lib/llvm-6.0/lib
           chmod +x .container/install-ubuntu-dependencies.sh
           .container/install-ubuntu-dependencies.sh
 
