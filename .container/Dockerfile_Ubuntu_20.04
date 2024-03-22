@@ -1,0 +1,10 @@
+FROM mcr.microsoft.com/mirror/docker/library/ubuntu:20.04
+
+# To make it easier for build and release pipelines to run apt-get,
+# configure apt to not require confirmation (assume the -y argument by default)
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+COPY install-ubuntu-dependencies.sh /usr/local/bin/install_dependencies.sh
+RUN chmod +x /usr/local/bin/install_dependencies.sh && \
+    /usr/local/bin/install_dependencies.sh
