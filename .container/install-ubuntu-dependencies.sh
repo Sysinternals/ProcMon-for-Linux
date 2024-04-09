@@ -38,11 +38,9 @@ sudo apt-get install -y --no-install-recommends \
         libfl-dev \
         liblocale-gettext-perl
 
-# set clang preference
+# set clang and gcc version preference
 sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100
-gcc --version
-clang --version
 
 # install debbuild
 wget https://github.com/debbuild/debbuild/releases/download/19.5.0/debbuild_19.5.0-ascherer.ubuntu18.04_all.deb \
@@ -59,8 +57,6 @@ export LLVM_DIR=/usr/lib/llvm-6.0/lib/cmake/llvm
 git clone --branch v0.19.0 https://github.com/iovisor/bcc.git
 mkdir -p bcc/build
 cd bcc/build
-#sed -i 's/llvm-3\.7/llvm-6.0/g' ../CMakeLists.txt
-cat ../CMakeLists.txt
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DLLVM_LIBRARY_DIRS=/usr/lib/llvm-6.0/lib
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr
 make
 sudo make install
