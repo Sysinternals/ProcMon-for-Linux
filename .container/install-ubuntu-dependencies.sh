@@ -55,10 +55,11 @@ rm packages-microsoft-prod.deb
 sudo apt -y update && sudo apt-get install -y dotnet-runtime-6.0
 
 # install bcc
+export LLVM_DIR=/usr/lib/llvm-6.0/lib/cmake/llvm
 git clone --branch v0.19.0 https://github.com/iovisor/bcc.git
 mkdir -p bcc/build
 cd bcc/build
-sed -i 's/llvm-3\.7/llvm-6.0/g' ../CMakeLists.txt
+#sed -i 's/llvm-3\.7/llvm-6.0/g' ../CMakeLists.txt
 cat ../CMakeLists.txt
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DLLVM_LIBRARY_DIRS=/usr/lib/llvm-6.0/lib
 make
