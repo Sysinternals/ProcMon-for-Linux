@@ -38,7 +38,7 @@ sudo apt-get install -y --no-install-recommends \
         liblocale-gettext-perl
 
 # set clang preference
-update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100
+sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100
 clang --version
 
 # install debbuild
