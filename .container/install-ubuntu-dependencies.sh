@@ -37,6 +37,9 @@ sudo apt-get install -y --no-install-recommends \
         libfl-dev \
         liblocale-gettext-perl
 
+# set clang preference
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100
+
 # install debbuild
 wget https://github.com/debbuild/debbuild/releases/download/19.5.0/debbuild_19.5.0-ascherer.ubuntu18.04_all.deb \
     && sudo dpkg -i debbuild_19.5.0-ascherer.ubuntu18.04_all.deb
