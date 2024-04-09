@@ -26,6 +26,7 @@ sudo apt-get install -y --no-install-recommends \
         cmake \
         flex \
         libedit-dev \
+        gcc-10 \
         libllvm6.0 \
         llvm-6.0-dev \
         libclang-6.0-dev \
@@ -39,6 +40,8 @@ sudo apt-get install -y --no-install-recommends \
 
 # set clang preference
 sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100
+gcc --version
 clang --version
 
 # install debbuild
