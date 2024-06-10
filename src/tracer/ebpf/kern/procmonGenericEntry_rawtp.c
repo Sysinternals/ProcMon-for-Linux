@@ -43,6 +43,7 @@
 #include <sysinternalsEBPF_common.h>
 #include "procmonEBPF_common.h"
 #include <sysinternalsEBPF_helpers.c>
+#include "procmonEBPF_maps.h"
 
 
 // store the syscall arguments from the registers in the event

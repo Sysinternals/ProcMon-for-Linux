@@ -53,7 +53,7 @@ class ProcmonConfiguration : public ProcmonArgs
 private:
     std::shared_ptr<IStorageEngine> _storageEngine;
     std::unique_ptr<ITracerEngine>  _tracerEngine;
-    std::vector<struct SyscallSchema::SyscallSchema> syscallSchema;
+    std::vector<struct SyscallSchema> syscallSchema;
     std::vector<std::string> pointerSyscalls;
     struct timespec startTime;
     std::string epocStartTime;
@@ -79,7 +79,7 @@ public:
     // Getters & Setters
     const std::unique_ptr<ITracerEngine>& GetTracer() { return _tracerEngine; };
     std::shared_ptr<IStorageEngine> GetStorage() { return _storageEngine; };
-    std::vector<struct SyscallSchema::SyscallSchema>& GetSchema() { return syscallSchema; }
+    std::vector<struct SyscallSchema>& GetSchema() { return syscallSchema; }
     std::vector<std::string> getPointerSyscalls() { return pointerSyscalls; }
     uint64_t GetStartTime();
     void SetStartTime(uint64_t start);

@@ -101,11 +101,11 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
 {
     std::string args = "";
 
-    std::vector<struct SyscallSchema::SyscallSchema>& schema = config->GetSchema();
+    std::vector<struct SyscallSchema>& schema = config->GetSchema();
 
     // Find the schema item
     int index = FindSyscall(event.syscall);
-    SyscallSchema::SyscallSchema item = schema[index];
+    SyscallSchema item = schema[index];
 
     int readOffset = 0;
     for(int i=0; i<item.usedArgCount; i++)
@@ -113,7 +113,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
         args+=item.argNames[i];
         args+="=";
 
-        if(item.types[i]==SyscallSchema::ProcmonArgTag::INT || item.types[i]==SyscallSchema::ProcmonArgTag::LONG)
+        if(item.types[i]==ProcmonArgTag::INT || item.types[i]==ProcmonArgTag::LONG)
         {
             long val = 0;
             int size = sizeof(long);
@@ -121,7 +121,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
             args+=std::to_string(val);
             readOffset+=size;
         }
-        else if(item.types[i]==SyscallSchema::ProcmonArgTag::UINT32)
+        else if(item.types[i]==ProcmonArgTag::UINT32)
         {
             uint32_t val = 0;
             int size = sizeof(uint32_t);
@@ -129,7 +129,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
             args+=std::to_string(val);
             readOffset+=size;
         }
-        else if (item.types[i] == SyscallSchema::ProcmonArgTag::UNSIGNED_INT || item.types[i] == SyscallSchema::ProcmonArgTag::UNSIGNED_LONG || item.types[i] == SyscallSchema::ProcmonArgTag::SIZE_T || item.types[i] == SyscallSchema::ArgTag::PID_T)
+        else if (item.types[i] == ProcmonArgTag::UNSIGNED_INT || item.types[i] == ProcmonArgTag::UNSIGNED_LONG || item.types[i] == ProcmonArgTag::SIZE_T || item.types[i] == ProcmonArgTag::PID_T)
         {
             unsigned long val = 0;
             int size = sizeof(unsigned long);
@@ -137,7 +137,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
             args+=std::to_string(val);
             readOffset+=size;
         }
-        else if (item.types[i] == SyscallSchema::ProcmonArgTag::CHAR_PTR || item.types[i] == SyscallSchema::ProcmonArgTag::CONST_CHAR_PTR)
+        else if (item.types[i] == ProcmonArgTag::CHAR_PTR || item.types[i] == ProcmonArgTag::CONST_CHAR_PTR)
         {
             if(event.syscall.compare("read") == 0)
             {
@@ -182,7 +182,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
                 args += ss.str();
             }
         }
-        else if (item.types[i] == SyscallSchema::ProcmonArgTag::FD)
+        else if (item.types[i] == ProcmonArgTag::FD)
         {
             int size=MAX_BUFFER/6;
             char buff[size];
@@ -190,7 +190,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
             readOffset+=size;
             args+=buff;
         }
-        else if (item.types[i] == SyscallSchema::ProcmonArgTag::PTR)
+        else if (item.types[i] == ProcmonArgTag::PTR)
         {
             unsigned long val = 0;
             int size = sizeof(unsigned long);
@@ -222,7 +222,7 @@ std::string EventFormatter::DecodeArguments(ITelemetry &event)
 
 int EventFormatter::FindSyscall(std::string& syscallName)
 {
-    std::vector<struct SyscallSchema::SyscallSchema>& schema = config->GetSchema();
+    std::vector<struct SyscallSchema>& schema = config->GetSchema();
 
     int i = 0;
     for(auto& syscall : schema)

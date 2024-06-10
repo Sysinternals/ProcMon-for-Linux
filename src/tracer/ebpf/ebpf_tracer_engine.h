@@ -23,17 +23,27 @@
 #include <elf.h>
 
 #include "syscall_schema.h"
-//#include "bpf_prog.h"
 #include "kern/procmonEBPF_common.h"
 #include "../../common/cancellable_message_queue.h"
 #include "../tracer_engine.h"
 #include "../../common/event.h"
 #include "../../storage/storage_engine.h"
 
-#define MAX_PIDS           10
+#include <limits.h>
+#include <libsysinternalsEBPF.h>
+
+//#define MAX_PIDS           10
 
 #define STAT_MAX_ITEMS      10
 #define CONFIG_ITEMS        1
+
+#define RUNSTATE_KEY        0
+#define CONFIG_PID_KEY      0
+
+#define CONFIG_INDEX        0
+#define PIDS_INDEX          1
+#define RUNSTATE_INDEX      2
+#define SYSCALL_INDEX       3
 
 #define KERN_4_17_5_1_OBJ       "procmonEBPFkern4.17-5.1.o"
 #define KERN_5_2_OBJ            "procmonEBPFkern5.2.o"
@@ -49,6 +59,20 @@ class EbpfTracerEngine : public ITracerEngine
 private:
     ~EbpfTracerEngine();
 
+    const ebpfTelemetryMapObject mapObjects[4] =
+    {
+        {"configuration", 0, NULL, NULL},
+        {"pids", 0, NULL, NULL},
+        {"runstate", 0, NULL, NULL},
+        {"syscalls", 0, NULL, NULL}
+    };
+
+    // this holds the FDs for the above maps.
+    // mapObjects above gets passed into sysinternalsEBPF config during telemetryStart.
+    // mapFds also gets passed into telemetryStart. mapFds gets populated during telemetryStart
+    // and can subsequently be used to access the maps.
+    int mapFds[sizeof(mapObjects) / sizeof(*mapObjects)];
+
     // The thread for polling the perf buffer
     // This thread will also be calling the
     // callback for every event
@@ -61,7 +85,7 @@ private:
     // from eBPF to be processed into telemetry
     CancellableMessageQueue<SyscallEvent> EventQueue;
 
-    std::vector<struct SyscallSchema::SyscallSchema> Schemas;
+    std::vector<struct SyscallSchema> Schemas;
 
     std::map<int, void*> SymbolCacheMap;
 

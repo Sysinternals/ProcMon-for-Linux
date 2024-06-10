@@ -26,8 +26,6 @@
 
 #include "kern/procmonEBPF_common.h"
 
-namespace SyscallSchema
-{
     class Utils
     {
     public:
@@ -124,4 +122,3 @@ namespace SyscallSchema
     private:
         Utils();
     };
-} // namespace SyscallSchema

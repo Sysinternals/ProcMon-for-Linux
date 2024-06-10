@@ -59,7 +59,7 @@ bool Headless::initialize(std::shared_ptr<ProcmonConfiguration> configPtr)
     }
 
     std::cout << "Syscall Filter: ";
-    if(config->events.size() == ::SyscallSchema::Utils::SyscallNameToNumber.size())
+    if(config->events.size() == Utils::SyscallNameToNumber.size())
     {
         std::cout << "All Syscalls" << std::endl;
     }

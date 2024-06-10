@@ -1077,7 +1077,7 @@ EventFormatter* Screen::GetFormatter(ITelemetry lineData)
 int Screen::FindSyscall(std::string& syscallName)
 {
     ProcmonConfiguration* config = configPtr.get();
-    std::vector<struct SyscallSchema::SyscallSchema>& schema = config->GetSchema();
+    std::vector<struct SyscallSchema>& schema = config->GetSchema();
 
     int i=0;
     for(auto& syscall : schema)

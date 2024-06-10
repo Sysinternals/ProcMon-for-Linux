@@ -154,12 +154,12 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
     LOG(INFO) << "Output trace file:" << outputTraceFilePath;
 
     // Get schema of all syscalls on system
-    syscallSchema = ::SyscallSchema::Utils::CollectSyscallSchema();
+    syscallSchema = Utils::CollectSyscallSchema();
 
     // if user has not specified any syscalls trace all events
     if(events.size() == 0)
     {
-        for (auto i : ::SyscallSchema::Utils::SyscallNameToNumber)
+        for (auto i : Utils::SyscallNameToNumber)
         {
             events.push_back({i.first});
         }
@@ -196,7 +196,7 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
     _tracerEngine->AddPids(pids);
 
     // List of all syscalls that contain pointer params
-    pointerSyscalls = ::SyscallSchema::Utils::Linux64PointerSycalls;
+    pointerSyscalls = Utils::Linux64PointerSycalls;
 }
 
 uint64_t ProcmonConfiguration::GetStartTime()

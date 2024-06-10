@@ -16,7 +16,7 @@
 
 #include "syscall_schema.h"
 
-std::map<std::string, SyscallSchema::ProcmonArgTag> SyscallSchema::Utils::ArgTypeStringToArgTag = {
+std::map<std::string, ProcmonArgTag> Utils::ArgTypeStringToArgTag = {
         {"fd", ProcmonArgTag::FD},
         {"int", ProcmonArgTag::INT},
         {"unsigned int", ProcmonArgTag::UNSIGNED_INT},
@@ -31,7 +31,7 @@ std::map<std::string, SyscallSchema::ProcmonArgTag> SyscallSchema::Utils::ArgTyp
         {"umode_t", ProcmonArgTag::INT}
     };
 
-std::map<std::string, int> SyscallSchema::Utils::SyscallNameToNumber = {
+std::map<std::string, int> Utils::SyscallNameToNumber = {
         {"read", 0},
         {"write", 1},
         {"open", 2},
@@ -369,7 +369,7 @@ std::map<std::string, int> SyscallSchema::Utils::SyscallNameToNumber = {
         {"rseq", 334}
     };
 
-std::map<int, std::string> SyscallSchema::Utils::SyscallNumberToName = {
+std::map<int, std::string> Utils::SyscallNumberToName = {
         { 0, "read"},
         { 1, "write"},
         { 2, "open"},
@@ -707,7 +707,7 @@ std::map<int, std::string> SyscallSchema::Utils::SyscallNumberToName = {
         { 334, "rseq"}
     };
 
-std::vector<std::string> SyscallSchema::Utils::Linux64PointerSycalls = {
+std::vector<std::string> Utils::Linux64PointerSycalls = {
         "mmap",
         "mremap",
         "shmat",

@@ -118,8 +118,12 @@ void EbpfTracerEngine::Initialize()
 
 
 EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents)
-    : ITracerEngine(storageEngine, targetEvents), Schemas(SyscallSchema::Utils::CollectSyscallSchema())
+    : ITracerEngine(storageEngine, targetEvents), Schemas(Utils::CollectSyscallSchema())
 {
+/*    mapObjects[0] = {"config", 0, nullptr, nullptr};
+    mapObjects[1] = {"pids", 0, nullptr, nullptr};
+    mapObjects[2] = {"runstate", 0, nullptr, nullptr};
+    mapObjects[3] = {"syscalls", 0, nullptr, nullptr};*/
 
 /*    RunState = TRACER_RUNNING;
 
@@ -128,7 +132,7 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
     auto config_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "config", sizeof(int), sizeof(uint64_t), CONFIG_ITEMS, 0);
     auto pid_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "pids", sizeof(int), sizeof(uint64_t), MAX_PIDS, 0);
     auto runstate_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "runstate", sizeof(int), sizeof(uint64_t), 1, 0);
-    auto syscalls_fd = bcc_create_map(BPF_MAP_TYPE_HASH, "syscalls", sizeof(int), sizeof(SyscallSchema::SyscallSchema), 345, 0);
+    auto syscalls_fd = bcc_create_map(BPF_MAP_TYPE_HASH, "syscalls", sizeof(int), sizeof(SyscallSchema), 345, 0);
     if (config_fd < 0 || syscalls_fd < 0 || runstate_fd < 0 || pid_fd < 0) {}
         // TODO: Error
 
@@ -143,7 +147,7 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
     ebpf::TableDesc runstate_desc("runstate", ebpf::FileDesc(runstate_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), 1, 0);
     ebpf::TableDesc config_desc("config", ebpf::FileDesc(config_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), CONFIG_ITEMS, 0);
     ebpf::TableDesc pid_desc("pids", ebpf::FileDesc(pid_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), MAX_PIDS, 0);
-    ebpf::TableDesc syscalls_desc("syscalls", ebpf::FileDesc(syscalls_fd), BPF_MAP_TYPE_HASH, sizeof(int), sizeof(SyscallSchema::SyscallSchema), 320, 0);
+    ebpf::TableDesc syscalls_desc("syscalls", ebpf::FileDesc(syscalls_fd), BPF_MAP_TYPE_HASH, sizeof(int), sizeof(SyscallSchema), 320, 0);
 
     tblstore->Insert(config_path, std::move(config_desc));
     tblstore->Insert(pid_path, std::move(pid_desc));
@@ -155,7 +159,7 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
     BPF->init(bpf_prog);
     BPF->get_array_table<uint64_t>("config").update_value(0, getpid());
     BPF->get_array_table<uint64_t>("runstate").update_value(0, RunState);             // Start procmon in a resumed state. We update this to suspended state if user chooses from TUI.
-    auto schemaTable = BPF->get_hash_table<int, ::SyscallSchema::SyscallSchema>("syscalls");
+    auto schemaTable = BPF->get_hash_table<int, ::SyscallSchema>("syscalls");
 
     // Initialize pids map to -1
     for(int i=0; i<MAX_PIDS; i++)
@@ -168,7 +172,7 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
         auto schemaItr = std::find_if(Schemas.begin(), Schemas.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
         if(schemaItr != Schemas.end())
         {
-            auto code = schemaTable.update_value(::SyscallSchema::Utils::GetSyscallNumberForName(event.Name()), std::move(*schemaItr.base()));
+            auto code = schemaTable.update_value(::Utils::GetSyscallNumberForName(event.Name()), std::move(*schemaItr.base()));
             if (code.code())
                 std::cout << "ERROR" << std::endl;
         }
@@ -186,7 +190,8 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
 void EbpfTracerEngine::SetRunState(int runState)
 {
     RunState = runState;
-    //BPF->get_array_table<uint64_t>("runstate").update_value(0, runState);
+    int key = RUNSTATE_KEY;
+    telemetryMapUpdateElem(mapFds[RUNSTATE_INDEX], &key, &runState, MAP_UPDATE_CREATE_OR_OVERWRITE);
 }
 
 EbpfTracerEngine::~EbpfTracerEngine()
@@ -228,13 +233,35 @@ void EbpfTracerEngine::Poll()
 
     SetBootTime();
 
-    const ebpfTelemetryMapObject    mapObjects[] =
-    {
-        {"syscallsMap", 0, NULL, NULL}
-    };
+    // Set PID
+    pid_t act_pid = getpid();
+    telemetryMapUpdateElem(mapFds[CONFIG_INDEX], CONFIG_PID_KEY, &act_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
 
-    // this holds the FDs for the above maps
-    int mapFds[sizeof(mapObjects) / sizeof(*mapObjects)];
+    // Set runstate to RUNNING
+    SetRunState(TRACER_RUNNING);
+
+    // Init the PIDs
+    uint64_t init_pid = -1;
+    for(int i=0; i<MAX_PIDS; i++)
+    {
+        telemetryMapUpdateElem(mapFds[PIDS_INDEX], &i, &init_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
+    }
+
+    // Set targeted syscalls
+    for (auto event : _targetEvents)
+    {
+        auto schemaItr = std::find_if(Schemas.begin(), Schemas.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
+        if(schemaItr != Schemas.end())
+        {
+            std::string str = schemaItr->syscallName;
+            char* charPtr = new char[str.size() + 1];
+            std::strcpy(charPtr, str.c_str());
+
+            int num = ::Utils::GetSyscallNumberForName(event.Name());
+            telemetryMapUpdateElem(mapFds[SYSCALL_INDEX], &num, charPtr, MAP_UPDATE_CREATE_OR_OVERWRITE);
+        }
+    }
+
 
     const ebpfTelemetryObject   kernelObjs[] =
     {
@@ -344,7 +371,6 @@ void EbpfTracerEngine::Poll()
 
     int ret = telemetryStart( &procmonConfig, PerfCallbackWrapper, PerfLostCallbackWrapper, telemetryReady, configChange, this, (const char **)argv, mapFds );
 
-
     // Any cleanup?
     return;
 }
@@ -382,7 +408,7 @@ void EbpfTracerEngine::Consume()
             batch.clear();
         }
 
-        std::string syscall = SyscallSchema::Utils::SyscallNumberToName[event->sysnum];
+        std::string syscall = Utils::SyscallNumberToName[event->sysnum];
         ITelemetry tel;
         tel.pid = event->pid;
         //tel.stackTrace = GetStackTraceForIPs(event->pid, event->kernelStack, event->kernelStackCount, event->userStack, event->userStackCount);

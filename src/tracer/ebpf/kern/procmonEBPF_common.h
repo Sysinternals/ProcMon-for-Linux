@@ -31,16 +31,12 @@
 
 #define LINUX_MAX_EVENT_SIZE (65536 - 24)
 
-// defining file mode locally to remove requirement for heavy includes.
-// note that these *could* change, *but really aren't likely to*!
-#define S_IFMT      00170000
-#define S_IFREG      0100000
-#define S_IFBLK      0060000
-#define S_IFSOCK     0140000
-
 #define MAX_BUFFER 128
 #define MAX_STACK_FRAMES 32
 #define MAX_PROC 512
+
+#define CONFIG_ITEMS        1
+#define MAX_PIDS           10
 
 struct SyscallEvent
 {
@@ -82,42 +78,4 @@ struct SyscallSchema
     enum ProcmonArgTag types[6];
     int usedArgCount;
 };
-
-// create a map to hold the event as we build it - too big for stack
-// one entry per cpu
-struct {
-    __uint(type, BPF_MAP_TYPE_ARRAY);
-    __uint(key_size, sizeof(uint32_t));
-    __uint(value_size, LINUX_MAX_EVENT_SIZE);
-    __uint(max_entries, MAX_PROC);
-} eventStorageMap SEC(".maps");
-
-// create a map to hold the args as we build it - too big for stack
-// one entry per cpu
-struct {
-    __uint(type, BPF_MAP_TYPE_ARRAY);
-    __type(key, uint32_t);
-    __type(value, argsStruct);
-    __uint(max_entries, MAX_PROC);
-} argsStorageMap SEC(".maps");
-
-
-// create a map to hold the packet as we access it - eBPF doesn't like
-// arbitrary access to stack buffers
-// one entry per cpu
-struct {
-    __uint(type, BPF_MAP_TYPE_ARRAY);
-    __uint(key_size, sizeof(uint32_t));
-    __uint(value_size, PACKET_SIZE);
-    __uint(max_entries, MAX_PROC);
-} packetStorageMap SEC(".maps");
-
-// create a map to hold the syscall information
-struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, 345);
-    __type(key, uint32_t);
-    __type(value, sizeof(struct SyscallSchema));
-} syscallsMap SEC(".maps");
-
 #endif

@@ -22,6 +22,7 @@
 
 #include "procmonEBPF_common.h"
 #include <sysinternalsEBPF_helpers.c>
+#include "procmonEBPF_maps.h"
 
 SEC("raw_tracepoint/sys_exit")
 __attribute__((flatten))
