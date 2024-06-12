@@ -22,9 +22,17 @@
 #include "display/screen.h"
 #include "display/headless.h"
 #include "logging/easylogging++.h"
+#include "installer.h"
 
 INITIALIZE_EASYLOGGINGPP
 
+//--------------------------------------------------------------------
+//
+// main
+//
+// Main entry point
+//
+//--------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
     // Make sure user is running elevated
@@ -47,6 +55,9 @@ int main(int argc, char *argv[])
     el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
     el::Loggers::addFlag(el::LoggingFlag::HierarchicalLogging);
     el::Loggers::setLoggingLevel(el::Level::Error);
+
+    // Extrace eBPF programs
+    ExtractEBPFPrograms();
 
     // Program initialization: create global config from args
     auto config = std::make_shared<ProcmonConfiguration>(argc, argv);
@@ -92,6 +103,9 @@ int main(int argc, char *argv[])
 
     // re-enable cursor before exiting Procmon
     curs_set(1);
+
+    config->GetTracer()->Cancel();
+    DeleteEBPFPrograms();
 
     return 0;
 }

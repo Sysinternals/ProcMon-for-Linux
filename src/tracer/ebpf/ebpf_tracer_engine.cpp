@@ -19,12 +19,6 @@
 #include <iostream>
 #include <limits.h>
 
-extern "C"
-{
-#include <libsysinternalsEBPF.h>
-#include <sysinternalsEBPFshared.h>
-}
-
 double g_bootSecSinceEpoch = 0;
 int machineId = 0;
 
@@ -191,7 +185,7 @@ void EbpfTracerEngine::SetRunState(int runState)
 {
     RunState = runState;
     int key = RUNSTATE_KEY;
-    telemetryMapUpdateElem(mapFds[RUNSTATE_INDEX], &key, &runState, MAP_UPDATE_CREATE_OR_OVERWRITE);
+    //telemetryMapUpdateElem(mapFds[RUNSTATE_INDEX], &key, &runState, MAP_UPDATE_CREATE_OR_OVERWRITE);
 }
 
 EbpfTracerEngine::~EbpfTracerEngine()
@@ -232,36 +226,6 @@ void EbpfTracerEngine::Poll()
     }
 
     SetBootTime();
-
-    // Set PID
-    pid_t act_pid = getpid();
-    telemetryMapUpdateElem(mapFds[CONFIG_INDEX], CONFIG_PID_KEY, &act_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
-
-    // Set runstate to RUNNING
-    SetRunState(TRACER_RUNNING);
-
-    // Init the PIDs
-    uint64_t init_pid = -1;
-    for(int i=0; i<MAX_PIDS; i++)
-    {
-        telemetryMapUpdateElem(mapFds[PIDS_INDEX], &i, &init_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
-    }
-
-    // Set targeted syscalls
-    for (auto event : _targetEvents)
-    {
-        auto schemaItr = std::find_if(Schemas.begin(), Schemas.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
-        if(schemaItr != Schemas.end())
-        {
-            std::string str = schemaItr->syscallName;
-            char* charPtr = new char[str.size() + 1];
-            std::strcpy(charPtr, str.c_str());
-
-            int num = ::Utils::GetSyscallNumberForName(event.Name());
-            telemetryMapUpdateElem(mapFds[SYSCALL_INDEX], &num, charPtr, MAP_UPDATE_CREATE_OR_OVERWRITE);
-        }
-    }
-
 
     const ebpfTelemetryObject   kernelObjs[] =
     {
@@ -351,7 +315,7 @@ void EbpfTracerEngine::Poll()
         }
     };
 
-    const char* defPaths[] = {"./", "./sysmonEBPF", "/opt/sysmon/", "/opt/sysmon/sysmonEBPF"};
+    const char* defPaths[] = {"./", "./procmonEBPF", "/tmp/"};
 
     const ebpfTelemetryConfig procmonConfig = (ebpfTelemetryConfig)
     {
@@ -364,12 +328,41 @@ void EbpfTracerEngine::Poll()
         sizeof(mapObjects) / sizeof(*mapObjects),
         mapObjects,
         NULL,
-        true
+        false
     };
 
     const char* const argv[] = {"procmon"};
 
-    int ret = telemetryStart( &procmonConfig, PerfCallbackWrapper, PerfLostCallbackWrapper, telemetryReady, configChange, this, (const char **)argv, mapFds );
+    int ret = telemetryStart(&procmonConfig, PerfCallbackWrapper, PerfLostCallbackWrapper, telemetryReady, configChange, this, (const char **)argv, mapFds);
+
+    // Set PID
+    pid_t act_pid = getpid();
+    //long res = telemetryMapUpdateElem(mapFds[CONFIG_INDEX], CONFIG_PID_KEY, &act_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
+
+    // Set runstate to RUNNING
+    SetRunState(TRACER_RUNNING);
+
+    // Init the PIDs
+    uint64_t init_pid = -1;
+    for(int i=0; i<MAX_PIDS; i++)
+    {
+       //res = telemetryMapUpdateElem(mapFds[PIDS_INDEX], &i, &init_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
+    }
+
+    // Set targeted syscalls
+    for (auto event : _targetEvents)
+    {
+        auto schemaItr = std::find_if(Schemas.begin(), Schemas.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
+        if(schemaItr != Schemas.end())
+        {
+            std::string str = schemaItr->syscallName;
+            char* charPtr = new char[str.size() + 1];
+            std::strcpy(charPtr, str.c_str());
+
+            int num = ::Utils::GetSyscallNumberForName(event.Name());
+            //res = telemetryMapUpdateElem(mapFds[SYSCALL_INDEX], &num, charPtr, MAP_UPDATE_CREATE_OR_OVERWRITE);
+        }
+    }
 
     // Any cleanup?
     return;
@@ -431,6 +424,11 @@ void EbpfTracerEngine::Consume()
 
         batch.push_back(tel);
     }
+
+    //
+    // Cancel the sysinternalsEBPF polling loop
+    //
+    telemetryCancel();
 
     return;
 }

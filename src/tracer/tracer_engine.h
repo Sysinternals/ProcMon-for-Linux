@@ -51,6 +51,7 @@ public:
     virtual void RemoveEvent(std::vector<Event> eventsToRemove) {};
     virtual void SetRunState(int runState) { RunState = runState; }
     virtual int GetRunState() { return RunState; }
+    virtual void Cancel() {}
 };
 
 #endif // TRACER_ENGINE_H

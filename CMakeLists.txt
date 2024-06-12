@@ -117,6 +117,7 @@ set (PROCMON_EBPF_SRC "${CMAKE_SOURCE_DIR}/src/tracer/ebpf/kern")
 
 add_executable(procmon
                src/procmon.cpp
+               src/installer.cpp
               "${PROCMON_TRACER_SRC}/ebpf_tracer_engine.cpp"
               "${PROCMON_TRACER_SRC}/syscall_schema.cpp"
               "${PROCMON_LOGGING_SRC}/easylogging++.cc"

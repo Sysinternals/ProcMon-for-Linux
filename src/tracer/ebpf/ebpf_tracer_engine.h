@@ -30,7 +30,13 @@
 #include "../../storage/storage_engine.h"
 
 #include <limits.h>
-#include <libsysinternalsEBPF.h>
+
+extern "C"
+{
+    #include <libsysinternalsEBPF.h>
+    #include <sysinternalsEBPFshared.h>
+}
+
 
 //#define MAX_PIDS           10
 
@@ -73,6 +79,7 @@ private:
     // and can subsequently be used to access the maps.
     int mapFds[sizeof(mapObjects) / sizeof(*mapObjects)];
 
+
     // The thread for polling the perf buffer
     // This thread will also be calling the
     // callback for every event
@@ -113,4 +120,5 @@ public:
     void AddPids(std::vector<int> pidsToTrace) override;
 
     void SetRunState(int runState) override;
+    void Cancel() { EventQueue.cancel(); }
 };
