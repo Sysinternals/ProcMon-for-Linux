@@ -37,20 +37,6 @@ extern "C"
     #include <sysinternalsEBPFshared.h>
 }
 
-
-//#define MAX_PIDS           10
-
-#define STAT_MAX_ITEMS      10
-#define CONFIG_ITEMS        1
-
-#define RUNSTATE_KEY        0
-#define CONFIG_PID_KEY      0
-
-#define CONFIG_INDEX        0
-#define PIDS_INDEX          1
-#define RUNSTATE_INDEX      2
-#define SYSCALL_INDEX       3
-
 #define KERN_4_17_5_1_OBJ       "procmonEBPFkern4.17-5.1.o"
 #define KERN_5_2_OBJ            "procmonEBPFkern5.2.o"
 #define KERN_5_3_5_5_OBJ        "procmonEBPFkern5.3-5.5.o"
@@ -65,21 +51,6 @@ class EbpfTracerEngine : public ITracerEngine
 private:
     ~EbpfTracerEngine();
 
-    const ebpfTelemetryMapObject mapObjects[4] =
-    {
-        {"configuration", 0, NULL, NULL},
-        {"pids", 0, NULL, NULL},
-        {"runstate", 0, NULL, NULL},
-        {"syscalls", 0, NULL, NULL}
-    };
-
-    // this holds the FDs for the above maps.
-    // mapObjects above gets passed into sysinternalsEBPF config during telemetryStart.
-    // mapFds also gets passed into telemetryStart. mapFds gets populated during telemetryStart
-    // and can subsequently be used to access the maps.
-    int mapFds[sizeof(mapObjects) / sizeof(*mapObjects)];
-
-
     // The thread for polling the perf buffer
     // This thread will also be calling the
     // callback for every event
@@ -91,8 +62,6 @@ private:
     // The queue for containing raw events
     // from eBPF to be processed into telemetry
     CancellableMessageQueue<SyscallEvent> EventQueue;
-
-    std::vector<struct SyscallSchema> Schemas;
 
     std::map<int, void*> SymbolCacheMap;
 
@@ -114,6 +83,8 @@ private:
     // static callback that passes the instance pointer in cbCookie
     static void PerfLostCallbackWrapper(void *cbCookie, int cpu, uint64_t lost);
 public:
+    std::vector<struct SyscallSchema> Schemas;
+
     EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents);
     void Initialize() override;
 

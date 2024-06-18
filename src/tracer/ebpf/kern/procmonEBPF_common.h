@@ -38,6 +38,18 @@
 #define CONFIG_ITEMS        1
 #define MAX_PIDS           10
 
+#define TRACER_RUNNING      0
+#define TRACER_SUSPENDED    1
+#define TRACER_STOP         2
+
+#define RUNSTATE_KEY        0
+#define CONFIG_PID_KEY      0
+
+#define CONFIG_INDEX        0
+#define PIDS_INDEX          1
+#define RUNSTATE_INDEX      2
+#define SYSCALL_INDEX       3
+
 struct SyscallEvent
 {
     pid_t pid;

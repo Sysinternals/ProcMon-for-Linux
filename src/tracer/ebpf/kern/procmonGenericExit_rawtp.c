@@ -28,8 +28,27 @@ SEC("raw_tracepoint/sys_exit")
 __attribute__((flatten))
 int genericRawExit(struct bpf_our_raw_tracepoint_args *ctx)
 {
+    uint64_t pidTid = bpf_get_current_pid_tgid();
+    const struct pt_regs *regs = (const struct pt_regs *)ctx->args[0];
 
-    {BPF_PRINTK("sys_exit\n");}
+    struct SyscallEvent* event = (struct SyscallEvent*) bpf_map_lookup_elem(&syscallsMap, &pidTid);
+    if (event == NULL)
+    {
+        BPF_PRINTK("[genericRawExit] Failed to get the event.");
+        return 1;
+    }
+
+    event->duration_ns = bpf_ktime_get_ns() - event->timestamp;
+
+    if (bpf_probe_read(&event->ret, sizeof(int64_t), (void *)&SYSCALL_PT_REGS_RC(regs)) != 0)
+    {
+        BPF_PRINTK("[genericRawExit] Failed to get return code\n");
+    }
+
+    //
+    // Send event
+    //
+    eventOutput((void*)ctx, &eventMap, BPF_F_CURRENT_CPU, event, sizeof(struct SyscallEvent));
 
     return 0;
 }

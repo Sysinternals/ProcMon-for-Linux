@@ -24,10 +24,6 @@
 #include "../common/event.h"
 #include "../storage/storage_engine.h"
 
-#define TRACER_RUNNING          0
-#define TRACER_SUSPENDED        1
-#define TRACER_STOP             2
-
 class ITracerEngine
 {
 protected:

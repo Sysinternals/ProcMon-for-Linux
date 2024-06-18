@@ -25,6 +25,9 @@ int machineId = 0;
 int     g_clkTck = 100;
 size_t  g_pwEntrySize = 0;
 
+std::vector<Event> events;
+std::vector<struct SyscallSchema> schemas = Utils::CollectSyscallSchema();
+
 const ebpfSyscallRTPprog        RTPenterProgs[] =
 {
     {"genericRawEnter", EBPF_GENERIC_SYSCALL}
@@ -35,6 +38,32 @@ const ebpfSyscallRTPprog        RTPexitProgs[] =
     {"genericRawExit", EBPF_GENERIC_SYSCALL}
 };
 
+const ebpfTelemetryMapObject mapObjects[4] =
+{
+    {"configuration", 0, NULL, NULL},
+    {"pids", 0, NULL, NULL},
+    {"runstate", 0, NULL, NULL},
+    {"syscalls", 0, NULL, NULL}
+};
+
+// this holds the FDs for the above maps.
+// mapObjects above gets passed into sysinternalsEBPF config during telemetryStart.
+// mapFds also gets passed into telemetryStart. mapFds gets populated during telemetryStart
+// and can subsequently be used to access the maps.
+int mapFds[sizeof(mapObjects) / sizeof(*mapObjects)];
+
+//--------------------------------------------------------------------
+//
+// logHandler
+//
+// Handles logs from sysinternalsEBPF
+//
+//--------------------------------------------------------------------
+void logHandler(const char *format, va_list args)
+{
+    vfprintf(stderr, format, args);
+}
+
 //--------------------------------------------------------------------
 //
 // telemetryReady
@@ -44,6 +73,37 @@ const ebpfSyscallRTPprog        RTPexitProgs[] =
 //--------------------------------------------------------------------
 void telemetryReady()
 {
+    // Set PID
+    pid_t act_pid = getpid();
+    int key = CONFIG_PID_KEY;
+    telemetryMapUpdateElem(mapFds[CONFIG_INDEX], &key, &act_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
+
+    // Set runstate
+    int state = TRACER_RUNNING;
+    key = RUNSTATE_KEY;
+    telemetryMapUpdateElem(mapFds[RUNSTATE_INDEX], &key, &state, MAP_UPDATE_CREATE_OR_OVERWRITE);
+
+    // Init the PIDs
+    uint64_t init_pid = -1;
+    for(int i=0; i<MAX_PIDS; i++)
+    {
+       telemetryMapUpdateElem(mapFds[PIDS_INDEX], &i, &init_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
+    }
+
+    // Set targeted syscalls
+    for (auto event : events)
+    {
+        auto schemaItr = std::find_if(schemas.begin(), schemas.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
+        if(schemaItr != schemas.end())
+        {
+            std::string str = schemaItr->syscallName;
+            char* charPtr = new char[str.size() + 1];
+            std::strcpy(charPtr, str.c_str());
+
+            int num = ::Utils::GetSyscallNumberForName(event.Name());
+            telemetryMapUpdateElem(mapFds[SYSCALL_INDEX], &num, static_cast<void*>(&(*schemaItr)), MAP_UPDATE_CREATE_OR_OVERWRITE);
+        }
+    }
 }
 
 //--------------------------------------------------------------------
@@ -57,6 +117,13 @@ void configChange()
 {
 }
 
+//--------------------------------------------------------------------
+//
+// SetBootTime
+//
+// Sets the boot time.
+//
+//--------------------------------------------------------------------
 void SetBootTime()
 {
     FILE *fp = NULL;
@@ -104,6 +171,13 @@ void SetBootTime()
 }
 
 
+//--------------------------------------------------------------------
+//
+// Initialize
+//
+// Initializes the eBPF tracer engine.
+//
+//--------------------------------------------------------------------
 void EbpfTracerEngine::Initialize()
 {
     PollingThread = std::thread(&EbpfTracerEngine::Poll, this);
@@ -111,9 +185,17 @@ void EbpfTracerEngine::Initialize()
 }
 
 
+//--------------------------------------------------------------------
+//
+// EbpfTracerEngine
+//
+// Constructor for the eBPF tracer engine.
+//
+//--------------------------------------------------------------------
 EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents)
     : ITracerEngine(storageEngine, targetEvents), Schemas(Utils::CollectSyscallSchema())
 {
+    events = targetEvents;
 /*    mapObjects[0] = {"config", 0, nullptr, nullptr};
     mapObjects[1] = {"pids", 0, nullptr, nullptr};
     mapObjects[2] = {"runstate", 0, nullptr, nullptr};
@@ -181,13 +263,27 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
 */
 }
 
+//--------------------------------------------------------------------
+//
+// SetRunState
+//
+// Sets the run state of the tracer.
+//
+//--------------------------------------------------------------------
 void EbpfTracerEngine::SetRunState(int runState)
 {
     RunState = runState;
     int key = RUNSTATE_KEY;
-    //telemetryMapUpdateElem(mapFds[RUNSTATE_INDEX], &key, &runState, MAP_UPDATE_CREATE_OR_OVERWRITE);
+    telemetryMapUpdateElem(mapFds[RUNSTATE_INDEX], &key, &runState, MAP_UPDATE_CREATE_OR_OVERWRITE);
 }
 
+//--------------------------------------------------------------------
+//
+// ~EbpfTracerEngine
+//
+// Destructor for the eBPF tracer engine.
+//
+//--------------------------------------------------------------------
 EbpfTracerEngine::~EbpfTracerEngine()
 {
     EventQueue.cancel();
@@ -195,26 +291,62 @@ EbpfTracerEngine::~EbpfTracerEngine()
     ConsumerThread.join();
 }
 
+//--------------------------------------------------------------------
+//
+// PerfCallbackWrapper
+//
+// Wrapper for the PerfCallback function. Called when new events
+// arrive in the perf buffer.
+//
+//--------------------------------------------------------------------
 void EbpfTracerEngine::PerfCallbackWrapper(/* EbpfTracerEngine* */void *cbCookie, int cpu, void* rawMessage, uint32_t rawMessageSize)
 {
     static_cast<EbpfTracerEngine *>(cbCookie)->PerfCallback(rawMessage, rawMessageSize);
 }
 
+//--------------------------------------------------------------------
+//
+// PerfCallback
+//
+// Called when new events arrive in the perf buffer.
+//
+//--------------------------------------------------------------------
 void EbpfTracerEngine::PerfCallback(void *rawMessage, int rawMessageSize)
 {
     EventQueue.push(*static_cast<SyscallEvent*>(rawMessage));
 }
 
+//--------------------------------------------------------------------
+//
+// PerfLostCallbackWrapper
+//
+// Lost events callback wrapper.
+//
+//--------------------------------------------------------------------
 void EbpfTracerEngine::PerfLostCallbackWrapper(void *cbCookie, int cpu, uint64_t lost)
 {
     static_cast<EbpfTracerEngine*>(cbCookie)->PerfLostCallback(lost);
 }
 
+//--------------------------------------------------------------------
+//
+// PerfLostCallback
+//
+// Lost events callback.
+//
+//--------------------------------------------------------------------
 void EbpfTracerEngine::PerfLostCallback(uint64_t lost)
 {
     return;
 }
 
+//--------------------------------------------------------------------
+//
+// Poll
+//
+// Polls the perf buffer for new events.
+//
+//--------------------------------------------------------------------
 void EbpfTracerEngine::Poll()
 {
     bool btfEnabled = true;
@@ -333,41 +465,20 @@ void EbpfTracerEngine::Poll()
 
     const char* const argv[] = {"procmon"};
 
+    setLogCallback(logHandler);
+
     int ret = telemetryStart(&procmonConfig, PerfCallbackWrapper, PerfLostCallbackWrapper, telemetryReady, configChange, this, (const char **)argv, mapFds);
 
-    // Set PID
-    pid_t act_pid = getpid();
-    //long res = telemetryMapUpdateElem(mapFds[CONFIG_INDEX], CONFIG_PID_KEY, &act_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
-
-    // Set runstate to RUNNING
-    SetRunState(TRACER_RUNNING);
-
-    // Init the PIDs
-    uint64_t init_pid = -1;
-    for(int i=0; i<MAX_PIDS; i++)
-    {
-       //res = telemetryMapUpdateElem(mapFds[PIDS_INDEX], &i, &init_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
-    }
-
-    // Set targeted syscalls
-    for (auto event : _targetEvents)
-    {
-        auto schemaItr = std::find_if(Schemas.begin(), Schemas.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
-        if(schemaItr != Schemas.end())
-        {
-            std::string str = schemaItr->syscallName;
-            char* charPtr = new char[str.size() + 1];
-            std::strcpy(charPtr, str.c_str());
-
-            int num = ::Utils::GetSyscallNumberForName(event.Name());
-            //res = telemetryMapUpdateElem(mapFds[SYSCALL_INDEX], &num, charPtr, MAP_UPDATE_CREATE_OR_OVERWRITE);
-        }
-    }
-
-    // Any cleanup?
     return;
 }
 
+//--------------------------------------------------------------------
+//
+// Consume
+//
+// Consumes the events from the event queue
+//
+//--------------------------------------------------------------------
 void EbpfTracerEngine::Consume()
 {
     // blocking pop return optional<T>, evaluates to "true" if we get a value
@@ -379,6 +490,12 @@ void EbpfTracerEngine::Consume()
     while (!EventQueue.isCancelled())
     {
         if(RunState == TRACER_STOP) break;
+
+        if(RunState == TRACER_SUSPENDED)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
 
         auto event = EventQueue.pop();
 
@@ -414,7 +531,10 @@ void EbpfTracerEngine::Consume()
             constexpr uint64_t sign_bits = ~uint64_t{} << 63;
             tel.result = (int)(-1 * (event->ret & sign_bits) + (event->ret & ~sign_bits));
         }
-        else    tel.result = event->ret;
+        else
+        {
+            tel.result = event->ret;
+        }
 
         tel.duration = event->duration_ns;
         tel.arguments = (unsigned char*) malloc(MAX_BUFFER);
@@ -433,6 +553,13 @@ void EbpfTracerEngine::Consume()
     return;
 }
 
+//--------------------------------------------------------------------
+//
+// GetStackTraceForIPs
+//
+// Gets callstack
+//
+//--------------------------------------------------------------------
 StackTrace EbpfTracerEngine::GetStackTraceForIPs(int pid, uint64_t *kernelIPs, uint64_t kernelCount, uint64_t *userIPs, uint64_t userCount)
 {
     StackTrace result;
@@ -493,11 +620,18 @@ StackTrace EbpfTracerEngine::GetStackTraceForIPs(int pid, uint64_t *kernelIPs, u
     return result;
 }
 
+//--------------------------------------------------------------------
+//
+// AddPids
+//
+// Sets the pids to trace
+//
+//--------------------------------------------------------------------
 void EbpfTracerEngine::AddPids(std::vector<int> pidsToTrace)
 {
-    //for(int i=0; i<pidsToTrace.size(); i++)
-    //{
-      //  BPF->get_array_table<uint64_t>("pids").update_value(i, pidsToTrace[i]);
-   // }
+    for(int i=0; i<pidsToTrace.size(); i++)
+    {
+        telemetryMapUpdateElem(mapFds[PIDS_INDEX], &i, &pidsToTrace[i], MAP_UPDATE_CREATE_OR_OVERWRITE);
+    }
 }
 

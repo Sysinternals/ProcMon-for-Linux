@@ -29,26 +29,17 @@
 // one entry per cpu
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
-    __uint(key_size, sizeof(uint32_t));
-    __uint(value_size, LINUX_MAX_EVENT_SIZE);
+    __type(key, uint32_t);
+    __type(value, struct SyscallEvent);
     __uint(max_entries, MAX_PROC);
 } eventStorageMap SEC(".maps");
-
-// create a map to hold the args as we build it - too big for stack
-// one entry per cpu
-struct {
-    __uint(type, BPF_MAP_TYPE_ARRAY);
-    __type(key, uint32_t);
-    __type(value, argsStruct);
-    __uint(max_entries, MAX_PROC);
-} argsStorageMap SEC(".maps");
 
 // create a map to hold the syscall information
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, 345);
-    __type(key, uint32_t);
-    __type(value, sizeof(struct SyscallSchema));
+    __uint(max_entries, 10240);
+    __type(key, uint64_t);
+    __type(value, struct SyscallEvent);
 } syscallsMap SEC(".maps");
 
 // Procmon config
@@ -67,7 +58,7 @@ struct {
     __uint(max_entries, MAX_PIDS);
 } pids SEC(".maps");
 
-// Procmon PIDS
+// Procmon runstate
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
     __type(key, uint32_t);
@@ -79,7 +70,7 @@ struct {
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __type(key, uint32_t);
-    __type(value, sizeof(struct SyscallSchema));
+    __type(value, struct SyscallSchema);
     __uint(max_entries, 345);
 } syscalls SEC(".maps");
 
