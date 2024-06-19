@@ -24,24 +24,46 @@
 #include <sysinternalsEBPF_helpers.c>
 #include "procmonEBPF_maps.h"
 
+// ------------------------------------------------------------------------------------------
+// genericRawExit
+//
+// Called during a syscall exit
+// ------------------------------------------------------------------------------------------
 SEC("raw_tracepoint/sys_exit")
 __attribute__((flatten))
 int genericRawExit(struct bpf_our_raw_tracepoint_args *ctx)
 {
     uint64_t pidTid = bpf_get_current_pid_tgid();
     const struct pt_regs *regs = (const struct pt_regs *)ctx->args[0];
+    int pid = pidTid >> 32;
 
+    //
+    // Check all filters
+    //
+    if(CheckFilters(pid) == 0)
+    {
+        return EBPF_RET_UNUSED;
+    }
+
+
+    //
+    // Look up the corresponding event
+    //
     struct SyscallEvent* event = (struct SyscallEvent*) bpf_map_lookup_elem(&syscallsMap, &pidTid);
     if (event == NULL)
     {
-        return 1;
+        return EBPF_RET_UNUSED;
     }
 
+    //
+    // Update event fields
+    //
     event->duration_ns = bpf_ktime_get_ns() - event->timestamp;
 
     if (bpf_probe_read(&event->ret, sizeof(int64_t), (void *)&SYSCALL_PT_REGS_RC(regs)) != 0)
     {
         BPF_PRINTK("[genericRawExit] Failed to get return code\n");
+        return EBPF_RET_UNUSED;
     }
 
     //
@@ -49,6 +71,6 @@ int genericRawExit(struct bpf_our_raw_tracepoint_args *ctx)
     //
     eventOutput((void*)ctx, &eventMap, BPF_F_CURRENT_CPU, event, sizeof(struct SyscallEvent));
 
-    return 0;
+    return EBPF_RET_UNUSED;
 }
 

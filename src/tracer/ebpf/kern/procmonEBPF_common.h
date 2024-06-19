@@ -50,6 +50,8 @@
 #define RUNSTATE_INDEX      2
 #define SYSCALL_INDEX       3
 
+#define EBPF_RET_UNUSED     0
+
 struct SyscallEvent
 {
     pid_t pid;

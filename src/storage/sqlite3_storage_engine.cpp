@@ -824,9 +824,9 @@ bool Sqlite3StorageEngine::Store(ITelemetry data)
 
     rc = rc & sqlite3_bind_int(stmt, 1, data.pid);
 
-    //auto serializedData = data.stackTrace.Serialize();
+    auto serializedData = data.stackTrace.Serialize();
 
-    //rc = rc & sqlite3_bind_text(stmt, 2, serializedData.c_str(), serializedData.size()+1, nullptr);
+    rc = rc & sqlite3_bind_text(stmt, 2, serializedData.c_str(), serializedData.size()+1, nullptr);
 
     rc = rc & sqlite3_bind_text(stmt, 3, data.comm.c_str(), data.comm.size()+1, nullptr);
 

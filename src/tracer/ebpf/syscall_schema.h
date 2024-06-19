@@ -25,22 +25,25 @@
 #include <iostream>
 
 #include "kern/procmonEBPF_common.h"
+#include "syscalls.h"
 
     class Utils
     {
     public:
         static std::map<std::string, ProcmonArgTag> ArgTypeStringToArgTag;
-        static std::map<std::string, int> SyscallNameToNumber;
-        static std::map<int, std::string> SyscallNumberToName;
         static std::vector<std::string> Linux64PointerSycalls;
 
         static int GetSyscallNumberForName(const std::string& name)
         {
-            auto maybeName = SyscallNameToNumber.find(name);
-            if (maybeName != SyscallNameToNumber.end())
-                return maybeName->second;
-            else
-                return -1;
+            for(const auto& syscall : syscalls)
+            {
+                if (syscall.name == name)
+                {
+                    return syscall.number;
+                }
+            }
+
+            return -1;
         }
 
         static ProcmonArgTag GetArgTagForArg(const std::string &argumentName, const std::string &argumentType)
@@ -71,21 +74,18 @@
             // Regex to parse arg and name
             std::regex argTypeAndName("([a-z\\* _]+)+ ([a-z_]+)$");
 
-            for (const auto &fileEntry : std::experimental::filesystem::directory_iterator("/sys/kernel/debug/tracing/events/syscalls"))
+            for(const auto& syscall : syscalls)
             {
-                std::string filepath = fileEntry.path();
-
+                SyscallSchema schema;
                 std::smatch match;
-                if (std::regex_match(filepath, match, filenameRegex))
+
+                if (syscall.entrypoint.compare(0, 4, "sys_") == 0)
                 {
-                    struct SyscallSchema schema;
+                    std::string sysDir = "sys_enter_" + syscall.entrypoint.substr(4);
+                    std::strcpy(schema.syscallName, syscall.name.c_str());
 
-                    // Extract the syscall name using the filename regex.
-                    // Messy, but we know we're looking exactly for the 2nd group.
-                    std::strcpy(schema.syscallName, match[2].str().c_str());
-
-                    // Change dir to format directory.
-                    std::ifstream file(filepath + "/format");
+                    std::string filePath = "/sys/kernel/debug/tracing/events/syscalls/" + sysDir + "/format";
+                    std::ifstream file(filePath);
 
                      // Skip all that we don't care about.
                     std::string line;

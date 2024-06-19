@@ -71,7 +71,7 @@ private:
     void Poll();
     void Consume();
 
-    StackTrace GetStackTraceForIPs(int pid, uint64_t *kernelIPs, uint64_t kernelCount, uint64_t *userIPs, uint64_t userCount);
+    StackTrace GetStackTraceForIPs(int pid, uint64_t *userIPs, uint64_t userCount);
 
     // Instance level callback
     void PerfCallback(void *rawMessage, int rawMessageSize);
@@ -85,7 +85,7 @@ private:
 public:
     std::vector<struct SyscallSchema> Schemas;
 
-    EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents);
+    EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents, std::vector<int> pids);
     void Initialize() override;
 
     void AddPids(std::vector<int> pidsToTrace) override;

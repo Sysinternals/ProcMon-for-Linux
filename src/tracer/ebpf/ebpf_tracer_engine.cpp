@@ -18,6 +18,12 @@
 #include "../../logging/easylogging++.h"
 #include <iostream>
 #include <limits.h>
+#include <unordered_map>
+
+#include "bcc_elf.h"
+#include "bcc_perf_map.h"
+#include "bcc_proc.h"
+#include "bcc_syms.h"
 
 double g_bootSecSinceEpoch = 0;
 int machineId = 0;
@@ -27,6 +33,15 @@ size_t  g_pwEntrySize = 0;
 
 std::vector<Event> events;
 std::vector<struct SyscallSchema> schemas = Utils::CollectSyscallSchema();
+void* symResolver = NULL;
+std::vector<int> pids;
+
+std::unordered_map<int, void*> symEnginePidMap;
+bcc_symbol_option SymbolOption = {.use_debug_file = 1,
+                                  .check_debug_file_crc = 1,
+                        		  .lazy_symbolize = 1,
+                                  .use_symbol_type = (1 << STT_FUNC) | (1 << STT_GNU_IFUNC)};
+
 
 const ebpfSyscallRTPprog        RTPenterProgs[] =
 {
@@ -61,7 +76,7 @@ int mapFds[sizeof(mapObjects) / sizeof(*mapObjects)];
 //--------------------------------------------------------------------
 void logHandler(const char *format, va_list args)
 {
-    vfprintf(stderr, format, args);
+    //vfprintf(stderr, format, args);
 }
 
 //--------------------------------------------------------------------
@@ -84,10 +99,15 @@ void telemetryReady()
     telemetryMapUpdateElem(mapFds[RUNSTATE_INDEX], &key, &state, MAP_UPDATE_CREATE_OR_OVERWRITE);
 
     // Init the PIDs
-    uint64_t init_pid = -1;
+    int init_pid = -1;
     for(int i=0; i<MAX_PIDS; i++)
     {
        telemetryMapUpdateElem(mapFds[PIDS_INDEX], &i, &init_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
+    }
+
+    for(int i=0; i<pids.size(); i++)
+    {
+        telemetryMapUpdateElem(mapFds[PIDS_INDEX], &i, &pids[i], MAP_UPDATE_CREATE_OR_OVERWRITE);
     }
 
     // Set targeted syscalls
@@ -192,75 +212,11 @@ void EbpfTracerEngine::Initialize()
 // Constructor for the eBPF tracer engine.
 //
 //--------------------------------------------------------------------
-EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents)
+EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents, std::vector<int> pidList)
     : ITracerEngine(storageEngine, targetEvents), Schemas(Utils::CollectSyscallSchema())
 {
     events = targetEvents;
-/*    mapObjects[0] = {"config", 0, nullptr, nullptr};
-    mapObjects[1] = {"pids", 0, nullptr, nullptr};
-    mapObjects[2] = {"runstate", 0, nullptr, nullptr};
-    mapObjects[3] = {"syscalls", 0, nullptr, nullptr};*/
-
-/*    RunState = TRACER_RUNNING;
-
-    // TODO: INIT THE BPF STUFF
-    // Create all BPF maps early to be stored in external table storage.
-    auto config_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "config", sizeof(int), sizeof(uint64_t), CONFIG_ITEMS, 0);
-    auto pid_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "pids", sizeof(int), sizeof(uint64_t), MAX_PIDS, 0);
-    auto runstate_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "runstate", sizeof(int), sizeof(uint64_t), 1, 0);
-    auto syscalls_fd = bcc_create_map(BPF_MAP_TYPE_HASH, "syscalls", sizeof(int), sizeof(SyscallSchema), 345, 0);
-    if (config_fd < 0 || syscalls_fd < 0 || runstate_fd < 0 || pid_fd < 0) {}
-        // TODO: Error
-
-    // Create external table storage and populate it with BPF maps.
-    std::unique_ptr<ebpf::TableStorage> tblstore = ebpf::createSharedTableStorage();
-
-    ebpf::Path syscalls_path({"syscalls"});
-    ebpf::Path pid_path({"pids"});
-    ebpf::Path config_path({"config"});
-    ebpf::Path runstate_path({"runstate"});
-
-    ebpf::TableDesc runstate_desc("runstate", ebpf::FileDesc(runstate_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), 1, 0);
-    ebpf::TableDesc config_desc("config", ebpf::FileDesc(config_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), CONFIG_ITEMS, 0);
-    ebpf::TableDesc pid_desc("pids", ebpf::FileDesc(pid_fd), BPF_MAP_TYPE_ARRAY, sizeof(int), sizeof(uint64_t), MAX_PIDS, 0);
-    ebpf::TableDesc syscalls_desc("syscalls", ebpf::FileDesc(syscalls_fd), BPF_MAP_TYPE_HASH, sizeof(int), sizeof(SyscallSchema), 320, 0);
-
-    tblstore->Insert(config_path, std::move(config_desc));
-    tblstore->Insert(pid_path, std::move(pid_desc));
-    tblstore->Insert(syscalls_path, std::move(syscalls_desc));
-    tblstore->Insert(runstate_path, std::move(runstate_desc));
-
-    // Initialize BPF object with prepared table storage.
-    BPF = std::make_unique<ebpf::BPF>(0, tblstore.release());
-    BPF->init(bpf_prog);
-    BPF->get_array_table<uint64_t>("config").update_value(0, getpid());
-    BPF->get_array_table<uint64_t>("runstate").update_value(0, RunState);             // Start procmon in a resumed state. We update this to suspended state if user chooses from TUI.
-    auto schemaTable = BPF->get_hash_table<int, ::SyscallSchema>("syscalls");
-
-    // Initialize pids map to -1
-    for(int i=0; i<MAX_PIDS; i++)
-    {
-        BPF->get_array_table<uint64_t>("pids").update_value(i, -1);
-    }
-
-    for (auto event : targetEvents)
-    {
-        auto schemaItr = std::find_if(Schemas.begin(), Schemas.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
-        if(schemaItr != Schemas.end())
-        {
-            auto code = schemaTable.update_value(::Utils::GetSyscallNumberForName(event.Name()), std::move(*schemaItr.base()));
-            if (code.code())
-                std::cout << "ERROR" << std::endl;
-        }
-    }
-
-    BPF->open_perf_buffer("events", &EbpfTracerEngine::PerfCallbackWrapper, &EbpfTracerEngine::PerfLostCallbackWrapper, (void*)this, 64);
-    PollingThread = std::thread(&EbpfTracerEngine::Poll, this);
-    ConsumerThread = std::thread(&EbpfTracerEngine::Consume, this);
-
-    BPF->attach_tracepoint("raw_syscalls:sys_enter", sys_enter_bpf_prog_name);
-    BPF->attach_tracepoint("raw_syscalls:sys_exit", sys_exit_bpf_prog_name);
-*/
+    pids = pidList;
 }
 
 //--------------------------------------------------------------------
@@ -518,10 +474,18 @@ void EbpfTracerEngine::Consume()
             batch.clear();
         }
 
-        std::string syscall = Utils::SyscallNumberToName[event->sysnum];
+        std::string syscall;
+        for(auto sys : syscalls)
+        {
+            if(sys.number == event->sysnum)
+            {
+                syscall = sys.name;
+            }
+        }
+
         ITelemetry tel;
         tel.pid = event->pid;
-        //tel.stackTrace = GetStackTraceForIPs(event->pid, event->kernelStack, event->kernelStackCount, event->userStack, event->userStackCount);
+        tel.stackTrace = GetStackTraceForIPs(event->pid, event->userStack, event->userStackCount);
         tel.comm = std::string(event->comm);
         tel.processName = std::string(event->comm);
         tel.syscall = syscall;
@@ -560,40 +524,27 @@ void EbpfTracerEngine::Consume()
 // Gets callstack
 //
 //--------------------------------------------------------------------
-StackTrace EbpfTracerEngine::GetStackTraceForIPs(int pid, uint64_t *kernelIPs, uint64_t kernelCount, uint64_t *userIPs, uint64_t userCount)
+StackTrace EbpfTracerEngine::GetStackTraceForIPs(int pid, uint64_t *userIPs, uint64_t userCount)
 {
     StackTrace result;
+    void* symResolver = NULL;
 
-/*    if (pid < 0)
-        pid = -1;
-
-    if (SymbolCacheMap.find(-1) == SymbolCacheMap.end())
-        SymbolCacheMap[-1] = bcc_symcache_new(pid, &SymbolOption);
-    void *kcache = SymbolCacheMap[-1];
-    if (SymbolCacheMap.find(pid) == SymbolCacheMap.end())
-        SymbolCacheMap[pid] = bcc_symcache_new(pid, &SymbolOption);
-    void *cache = SymbolCacheMap[pid];
-
-
-    // loop over the IPs and get symbols
-    bcc_symbol symbol;
-    for (int i = 0; i < kernelCount; i++)
+    if (symEnginePidMap.find(pid) == symEnginePidMap.end())
     {
-        result.kernelIPs.push_back(kernelIPs[i]);
-        if (bcc_symcache_resolve(kcache, kernelIPs[i], &symbol) != 0)
-        {
-            result.kernelSymbols.push_back("[UNKNOWN]");
-        }
-        else
-        {
-            result.kernelSymbols.push_back(symbol.demangle_name);
-        }
+        symResolver = bcc_symcache_new(pid, &SymbolOption);
+        symEnginePidMap[pid] = symResolver;
+
+    }
+    else
+    {
+        symResolver = symEnginePidMap[pid];
     }
 
+    bcc_symbol symbol;
     for (int i = 0; i < userCount; i++)
     {
         result.userIPs.push_back(userIPs[i]);
-        int ret = bcc_symcache_resolve(cache, userIPs[i], &symbol);
+        int ret = bcc_symcache_resolve(symResolver, userIPs[i], &symbol);
 
         if (ret != 0)
         {
@@ -615,7 +566,6 @@ StackTrace EbpfTracerEngine::GetStackTraceForIPs(int pid, uint64_t *kernelIPs, u
             result.userSymbols.push_back(ss.str());
         }
     }
-    */
 
     return result;
 }

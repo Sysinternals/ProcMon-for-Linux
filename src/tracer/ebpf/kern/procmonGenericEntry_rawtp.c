@@ -129,28 +129,147 @@ static inline bool set_eventArgs(unsigned long *a, const struct pt_regs *regs)
         return false;
 }
 
-
-SEC("raw_tracepoint/sys_enter")
-__attribute__((flatten))
-int genericRawEnter(struct bpf_our_raw_tracepoint_args *ctx)
+// ------------------------------------------------------------------------------------------
+// GetRunningState
+//
+// Returns the running state
+// ------------------------------------------------------------------------------------------
+__attribute__((always_inline))
+static inline uint64_t GetRunningState()
 {
     uint64_t *state = NULL;
-    int ret = 0;
-    int rkey = 0;
-    uint32_t syscall = ctx->args[1];
-    uint32_t cpuId = bpf_get_smp_processor_id();
-    uint64_t pidTid = bpf_get_current_pid_tgid();
-    uint64_t pid = pidTid >> 32;
-    argsStruct* eventArgs = NULL;
-    struct pt_regs* regs = NULL;
+    int rkey = RUNSTATE_KEY;
+
+    state = (uint64_t*)bpf_map_lookup_elem(&runstate, &rkey);
+    if(state == NULL)
+    {
+        return -1;
+    }
+
+    return *state;
+}
+
+
+// ------------------------------------------------------------------------------------------
+// MatchPidFilter
+//
+// Checks if the specified pid matches the pid filter
+// ------------------------------------------------------------------------------------------
+__attribute__((always_inline))
+static inline int IsProcmon()
+{
+    char comm[16] = {0};
+    bpf_get_current_comm(comm, sizeof(comm));
+
+    if (comm[0] == 'p' && comm[1] == 'r' && comm[2] == 'o' && comm[3] == 'c' && comm[4] == 'm' && comm[5] == 'o' && comm[6] == 'n')
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+// ------------------------------------------------------------------------------------------
+// MatchPidFilter
+//
+// Checks if the specified pid matches the pid filter
+// ------------------------------------------------------------------------------------------
+__attribute__((always_inline))
+static inline int MatchPidFilter(int pid)
+{
+    for(int i=0; i<MAX_PIDS; i++)
+    {
+        uint32_t key = i;
+        int* pidMapItem = (int*)bpf_map_lookup_elem(&pids, &key);
+        if(pidMapItem)
+        {
+            int foundPid = *pidMapItem;
+
+            if(foundPid == pid)
+            {
+                return 1;
+            }
+
+            if(foundPid == -1)
+            {
+                //
+                // if the first element is -1, then we are in "include all" mode
+                //
+                if(i == 0)
+                {
+                    return 1;
+                }
+
+                break;              // we can bail early since -1 indicates we've reached the end of the pid items in the map
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return 0;
+}
+
+// ------------------------------------------------------------------------------------------
+// CheckFilters
+//
+// Checks all filters to see if the event should be processed
+// ------------------------------------------------------------------------------------------
+__attribute__((always_inline))
+static inline int CheckFilters(int pid)
+{
+    //
+    // Check if we are in procmon
+    //
+    if(IsProcmon() == 1)
+    {
+        return 0;
+    }
 
     //
     // Check to make sure we are in a running state
     //
-    state = (uint64_t*)bpf_map_lookup_elem(&runstate, &rkey);
-    if(state==NULL)
+    int runstate = GetRunningState();
+    if(runstate != 0)
     {
-        return -1;
+        return 0;
+    }
+
+    //
+    // If a pid filter has been specified, check if the pid matches
+    //
+    if(MatchPidFilter(pid) == 0)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+
+// ------------------------------------------------------------------------------------------
+// genericRawEnter
+//
+// Called during a syscall enter
+// ------------------------------------------------------------------------------------------
+SEC("raw_tracepoint/sys_enter")
+__attribute__((flatten))
+int genericRawEnter(struct bpf_our_raw_tracepoint_args *ctx)
+{
+    uint32_t syscall = ctx->args[1];
+    uint32_t cpuId = bpf_get_smp_processor_id();
+    uint64_t pidTid = bpf_get_current_pid_tgid();
+    int pid = pidTid >> 32;
+    struct pt_regs* regs = NULL;
+
+    //
+    // Check all filters
+    //
+    if(CheckFilters(pid) == 0)
+    {
+        return EBPF_RET_UNUSED;
     }
 
     //
@@ -160,7 +279,7 @@ int genericRawEnter(struct bpf_our_raw_tracepoint_args *ctx)
     if(schema == NULL)
     {
         BPF_PRINTK("[genericRawEnter] Failed to get syscall schema %d.", syscall);
-        return -1;
+        return EBPF_RET_UNUSED;
     }
 
     //
@@ -170,7 +289,7 @@ int genericRawEnter(struct bpf_our_raw_tracepoint_args *ctx)
     if (!sysEntry)
     {
         BPF_PRINTK("[genericRawEnter] Failed to get storage for syscall event.");
-        return 0;
+        return EBPF_RET_UNUSED;
     }
 
     //
@@ -186,7 +305,8 @@ int genericRawEnter(struct bpf_our_raw_tracepoint_args *ctx)
     unsigned long a[8];
     if (!set_eventArgs(a, regs))
     {
-        BPF_PRINTK("[genericRawEnter] set_eventArgs failed\n");
+        BPF_PRINTK("[genericRawEnter] Failed to set_eventArgs\n");
+        return EBPF_RET_UNUSED;
     }
 
     unsigned int offset = 0;
@@ -201,10 +321,11 @@ int genericRawEnter(struct bpf_our_raw_tracepoint_args *ctx)
     //
     // Store the event to be retrieved and updated on exit
     //
-    if ((ret = bpf_map_update_elem(&syscallsMap, &pidTid, sysEntry, BPF_ANY)) != UPDATE_OKAY)
+    if (bpf_map_update_elem(&syscallsMap, &pidTid, sysEntry, BPF_ANY) != UPDATE_OKAY)
     {
-        BPF_PRINTK("ERROR, HASHMAP: failed to update syscalls map, %ld\n", ret);
+        BPF_PRINTK("ERROR, HASHMAP: failed to update syscalls map\n");
+        return EBPF_RET_UNUSED;
     }
 
-    return 0;
+    return EBPF_RET_UNUSED;
 }

@@ -114,6 +114,7 @@ set (PROCMON_STORAGE_SRC "${CMAKE_SOURCE_DIR}/src/storage")
 set (PROCMON_CONFIG_SRC "${CMAKE_SOURCE_DIR}/src/configuration")
 set (PROCMON_DISPLAY_SRC "${CMAKE_SOURCE_DIR}/src/display")
 set (PROCMON_EBPF_SRC "${CMAKE_SOURCE_DIR}/src/tracer/ebpf/kern")
+set (PROCMON_SYM_SRC "${CMAKE_SOURCE_DIR}/src/sym")
 
 add_executable(procmon
                src/procmon.cpp
@@ -132,6 +133,11 @@ add_executable(procmon
               "${PROCMON_DISPLAY_SRC}/headless.cpp"
               "${PROCMON_DISPLAY_SRC}/kill_event_formatter.cpp"
               "${PROCMON_DISPLAY_SRC}/screen.cpp"
+              "${PROCMON_SYM_SRC}/bcc_proc.cpp"
+              "${PROCMON_SYM_SRC}/bcc_syms.cc"
+              "${PROCMON_SYM_SRC}/bcc_elf.cpp"
+              "${PROCMON_SYM_SRC}/bcc_perf_map.cpp"
+              "${PROCMON_SYM_SRC}/bcc_zip.cpp"
               procmonEBPFkern4.17-5.1.o.o
               procmonEBPFkern5.2.o.o
               procmonEBPFkern5.3-5.5.o.o
@@ -148,6 +154,7 @@ target_include_directories(procmon PUBLIC
                            "${PROJECT_BINARY_DIR}/src/"
                            "${CMAKE_SOURCE_DIR}/vendor/sqlite3"
                            "/opt/sysinternalsEBPF/ebpfKern"
+                           "${PROCMON_SYM_SRC}"
                            ${CURSES_INCLUDE_DIR}
                           )
 
@@ -156,6 +163,7 @@ target_link_libraries(procmon
                       sqlite3-static
                       ${CURSES_LIBRARIES}
                       -lpanel
+                      elf
                       stdc++fs
                      )
 

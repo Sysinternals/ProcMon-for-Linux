@@ -159,9 +159,9 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
     // if user has not specified any syscalls trace all events
     if(events.size() == 0)
     {
-        for (auto i : Utils::SyscallNameToNumber)
+        for (auto i : syscalls)
         {
-            events.push_back({i.first});
+            events.push_back({i.name});
         }
     }
     else
@@ -190,10 +190,9 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
     _storageEngine->Initialize(events);
 
     // Initialize Tracer
-    _tracerEngine = std::unique_ptr<ITracerEngine>(new EbpfTracerEngine(_storageEngine, events));
+    _tracerEngine = std::unique_ptr<ITracerEngine>(new EbpfTracerEngine(_storageEngine, events, pids));
     _tracerEngine->Initialize();
     _tracerEngine->AddEvent(events);
-    _tracerEngine->AddPids(pids);
 
     // List of all syscalls that contain pointer params
     pointerSyscalls = Utils::Linux64PointerSycalls;
