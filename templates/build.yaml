@@ -4,8 +4,8 @@ parameters:
   default: '.'
 - name: builddir
   type: string
-  default: 'procdump_build'  
-  
+  default: 'procmon_build'
+
 steps:
 - script: |
    export LLVM_DIR=/usr/lib/llvm-6.0/lib/cmake/llvm

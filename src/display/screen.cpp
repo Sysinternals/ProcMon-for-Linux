@@ -653,7 +653,7 @@ void Screen::drawHeader()
     wmove(headerWin, 0, 0);
 
     // write header to screen
-    wprintw(headerWin, ">>> ProcessMonitor (preview) <<<");
+    wprintw(headerWin, ">>> ProcessMonitor (%s) <<<", STRFILEVER);
 
     // enable fkeys on header window
     keypad(headerWin, true);
@@ -1447,7 +1447,7 @@ void Screen::showHelpView()
     panel_above(helpPanel);
 
     // print header
-    windowPrintFill(helpWin, COLUMN_HEADER_COLOR, 1, y, "%s %d.%d %s", "Procmon",  PROCMON_VERSION_MAJOR, PROCMON_VERSION_MINOR, "- (C) 2020 Microsoft Corporation. Licensed under the MIT license.");
+    windowPrintFill(helpWin, COLUMN_HEADER_COLOR, 1, y, "%s %s", "Sysinternals - Procmon",  STRFILEVER);
     y+=2;
 
     // print column labels

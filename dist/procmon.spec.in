@@ -1,0 +1,96 @@
+Name:           procmon
+Version:        @PKG_VERSION@
+Release:        %_Revision
+Summary:        Sysinternals process monitor utility
+
+%if "%{_vendor}" == "debbuild"
+Group:          devel
+%else
+Group:          Development/Tools%{?suse_version:/Other}
+%endif
+
+License:        MIT
+URL:            https://github.com/Microsoft/ProcMon-for-Linux
+Source0:        %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
+
+Requires:       sysinternalsebpf >= 1.4
+
+%description
+Process Monitor (Procmon) is part of the Sysinternals suite of tools.  Procmon provides a convenient and efficient way for Linux developers to trace the syscall
+activity on the system.
+
+%prep
+%autosetup
+
+%build
+# The makefile doesn't like %%make_build (parallel make)
+make CFLAGS="%{optflags}"
+
+%install
+%make_install
+
+%files
+%license LICENSE
+%doc README.md procmon.gif
+%{_bindir}/procmon
+%{_mandir}/man1/procmon.1*
+
+
+
+%changelog
+* Wed Sep 6 2023 Mario Hewardt <marioh@microsoft.com> - 2.2
+- Adds Azure Linux package
+- Fixes memory leaks
+
+* Fri Aug 11 2023 Mario Hewardt <marioh@microsoft.com> - 2.1
+- Fixes bug that can lead to crash in monitored .NET process
+- Adds thread id to profiler tracing
+
+* Wed Jul 26 2023 Mario Hewardt <marioh@microsoft.com> - 2.0
+- -gcm allows you to specify generation or heap (LOH and POH) thresholds.
+- -gcgen allows you to create a dump at the start and end of a GC.
+- Allow multiple thresholds for memory trigger (-m)
+
+* Thu Jun 1 2023 Mario Hewardt <marioh@microsoft.com> - 1.5
+- security hardening
+
+* Fri Mar 3 2023 Mario Hewardt <marioh@microsoft.com> - 1.4.1
+- added the capability to dump on .NET 1st chance exception messages
+- added wildcard support for .NET exception filters
+
+* Mon Dec 12 2022 Mario Hewardt <marioh@microsoft.com> - 1.4
+- added the capability to dump on .NET 1st chance exceptions (-e and -f)
+
+* Mon Sep 26 2022 Javid Habibi <jahabibi@microsoft.com> - 1.3
+- added process group trigger
+- BREAKING CHANGE: rework CLI interface to match that of Procdump for Windows
+- various small bug fixes
+
+* Tue Sep 14 2021 Javid Habibi <jahabibi@microsoft.com> - 1.2
+- added signal trigger
+- added custom filepath for memory dump generation
+- various small bug fixes
+
+* Fri Apr 3 2020 Javid Habibi <jahabibi@microsoft.com> - 1.1.1
+- implimented thread and file descriptor count trigger
+- added polling interval switch
+
+* Mon Dec 9 2019 Javid Habibi <jahabibi@microsoft.com> - 1.1
+- Added support for .Net Core 3.x+ core dump generation that results in more manageable core dump sizes
+
+* Fri Nov 8 2019 Javid Habibi <jahabibi@microsoft.com> - 1.0.2
+- implimented -w target flag
+- fixed pthread cancellation bug
+- added additional error checking for null process names
+- implimented a minimal kernel check validation
+- various bug fixes
+
+* Wed Jan 10 2018 Javid Habibi <jahabibi@microsoft.com> - 1.0.1
+- fixed potential deadlock upon malloc failing
+- fixed improper process name parsing and sanitizing process
+  name for dump file generation
+- fixed various typos
+- fixed post-build check failures on openSUSE
+
+* Tue Dec 05 2017 Javid Habibi <jahabibi@microsoft.com> - 1.0
+- Initial release

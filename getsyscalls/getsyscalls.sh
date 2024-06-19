@@ -12,7 +12,7 @@ OUTPUT_FILE="../src/tracer/ebpf/syscalls.h"
 
 # Fetch the file
 echo "Fetching syscall table from $URL ..."
-wget -q "$URL" -O "$INPUT_FILE" 
+wget -q "$URL" -O "$INPUT_FILE"
 
 # Check if download was successful
 if [ $? -ne 0 ]; then
@@ -29,5 +29,3 @@ if [ $? -ne 0 ]; then
     echo "Failed to run getsyscalls on $INPUT_FILE"
     exit 1
 fi
-
-echo "Syscalls have been parsed and written to $OUTPUT_FILE"

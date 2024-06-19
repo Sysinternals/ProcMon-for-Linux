@@ -71,7 +71,7 @@ struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __type(key, uint32_t);
     __type(value, struct SyscallSchema);
-    __uint(max_entries, syscalls.size());
+    __uint(max_entries, 1000);
 } syscalls SEC(".maps");
 
 #endif

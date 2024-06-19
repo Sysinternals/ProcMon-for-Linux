@@ -53,6 +53,9 @@ else()
   project (procmon VERSION 0.0.0)
 endif()
 
+set(PROJECT_VERSION_TWEAK 0)
+file(READ "dist/changelog" CHANGE_LOG)
+
 #
 # make ncurses a requirement
 #
@@ -68,11 +71,51 @@ set(CMAKE_BUILD_TYPE Debug)
 option(DEBUG_K "Enter debug mode" On)
 
 #
-# Configure version header file to pass CMake settings to source code.
+# package name
+#
+set(PACKAGE_NAME "procmon")
+
+#
+# MAN page
+#
+set(PROCMON_COMPRESS_MAN "procmon.1.gz")
+
+add_custom_target(procmonManPageCompress ALL
+                  DEPENDS ${PROJECT_BINARY_DIR}/${PROCMON_COMPRESS_MAN}
+                  )
+
+add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${PROCMON_COMPRESS_MAN}
+                   COMMAND gzip -9n -f -c "${CMAKE_SOURCE_DIR}/procmon.1" > ${PROJECT_BINARY_DIR}/${PROCMON_COMPRESS_MAN}
+                   COMMENT "Compressing Procmon man page"
+                   DEPENDS "${CMAKE_SOURCE_DIR}/procmon.1"
+                  )
+
+#
+# Change log
+#
+set(PROCMON_COMPRESS_CHANGELOG "changelog.gz")
+
+add_custom_target(procmonChangelogCompress ALL
+                  DEPENDS ${PROJECT_BINARY_DIR}/${PROCMON_COMPRESS_CHANGELOG}
+                  )
+
+add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${PROCMON_COMPRESS_CHANGELOG}
+                   COMMAND cp "${CMAKE_SOURCE_DIR}/dist/changelog" ${PROJECT_BINARY_DIR} && gzip -f -c "${CMAKE_SOURCE_DIR}/dist/changelog" > ${PROJECT_BINARY_DIR}/${PROCMON_COMPRESS_CHANGELOG}
+                   COMMENT "Compressing changelog"
+                   DEPENDS "${CMAKE_SOURCE_DIR}/dist/changelog"
+                  )
+
+
+
+#
+# Configure files
 #
 configure_file ("${PROJECT_SOURCE_DIR}/src/version.h.in"
                 "${PROJECT_BINARY_DIR}/src/version.h"
                )
+
+configure_file(dist/DEBIAN.in/control.in DEBIANcontrol)
+configure_file(dist/SPECS.in/spec.in SPECS.spec)
 
 include(FetchContent)
 
@@ -185,6 +228,19 @@ foreach(BIN_FILE IN LISTS PACKED_BINARY_FILES)
                     DEPENDS ${PROJECT_BINARY_DIR}/${BIN_FILE}
                     )
 endforeach(BIN_FILE)
+
+#
+# Make package(s)
+#
+add_custom_target(deb
+    COMMAND "${CMAKE_SOURCE_DIR}/makePackages.sh" "${CMAKE_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" "${PACKAGE_NAME}" "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}" "0" "deb"
+    DEPENDS "${CMAKE_SOURCE_DIR}/dist" "${PROJECT_BINARY_DIR}/procmon"
+)
+
+add_custom_target(rpm
+    COMMAND "${CMAKE_SOURCE_DIR}/makePackages.sh" "${CMAKE_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" "${PACKAGE_NAME}" "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}" "0" "rpm"
+    DEPENDS "${CMAKE_SOURCE_DIR}/dist" "${PROJECT_BINARY_DIR}/procmon"
+)
 
 #
 # EBPF

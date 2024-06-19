@@ -36,9 +36,8 @@ bool Headless::initialize(std::shared_ptr<ProcmonConfiguration> configPtr)
 {
     config = configPtr;
 
-    std::cout << "Procmon " << PROCMON_VERSION_MAJOR << "." << PROCMON_VERSION_MINOR << " - (C) 2020 Microsoft Corporation. Licensed under the MIT license." << std::endl;
-    std::cout << "Copyright (C) 2020 Microsoft Corporation. All rights reserved. Licensed under the MIT license." << std::endl;
-    std::cout << "Mark Russinovich, Mario Hewardt, Javid Habibi, John Salem" << std::endl << std::endl;
+    std::cout << "Procmon " << STRFILEVER;
+    std::cout << VER_COPYRIGHT;
 
     std::cout << "Press Ctrl-C to end monitoring without terminating the process." << std::endl << std::endl;
 
