@@ -15,6 +15,7 @@
 */
 
 #include "syscall_schema.h"
+#include "syscalls.h"
 
 std::map<std::string, ProcmonArgTag> Utils::ArgTypeStringToArgTag = {
         {"fd", ProcmonArgTag::FD},
@@ -36,7 +37,7 @@ std::map<std::string, int> Utils::SyscallNameToNumber = {
         {"write", 1},
         {"open", 2},
         {"close", 3},
-        {"stat", 4},
+        {"statfs", 4},
         {"fstat", 5},
         {"lstat", 6},
         {"poll", 7},

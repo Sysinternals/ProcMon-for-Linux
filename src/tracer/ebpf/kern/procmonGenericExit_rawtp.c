@@ -34,7 +34,6 @@ int genericRawExit(struct bpf_our_raw_tracepoint_args *ctx)
     struct SyscallEvent* event = (struct SyscallEvent*) bpf_map_lookup_elem(&syscallsMap, &pidTid);
     if (event == NULL)
     {
-        BPF_PRINTK("[genericRawExit] Failed to get the event.");
         return 1;
     }
 

@@ -271,3 +271,16 @@ foreach(EBPF_PROG IN LISTS EBPF_PROGS)
     set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${EBPF_PROG}${EBPF_CORE_PROG_SUFFIX}.o)
 
 endforeach(EBPF_PROG)
+
+# Define the parse_syscalls target
+add_executable(getsyscalls getsyscalls/getsyscalls.cpp)
+
+# Add a custom target to run parse_syscalls
+add_custom_target(run_getsyscalls
+    COMMAND ${CMAKE_SOURCE_DIR}/getsyscalls/getsyscalls.sh 6.7
+    DEPENDS getsyscalls
+    COMMENT "Running getsyscalls"
+)
+
+# Add dependencies to ensure parse_syscalls runs before other targets
+add_dependencies(procmon run_getsyscalls)
