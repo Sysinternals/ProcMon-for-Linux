@@ -323,7 +323,7 @@ int genericRawEnter(struct bpf_our_raw_tracepoint_args *ctx)
     //
     if (bpf_map_update_elem(&syscallsMap, &pidTid, sysEntry, BPF_ANY) != UPDATE_OKAY)
     {
-        BPF_PRINTK("ERROR, HASHMAP: failed to update syscalls map\n");
+        BPF_PRINTK("[genericRawEnter] Failed to update syscalls map\n");
         return EBPF_RET_UNUSED;
     }
 

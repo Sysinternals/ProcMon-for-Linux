@@ -35,6 +35,8 @@ std::vector<Event> events;
 std::vector<struct SyscallSchema> schemas = Utils::CollectSyscallSchema();
 void* symResolver = NULL;
 std::vector<int> pids;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;;
 
 std::unordered_map<int, void*> symEnginePidMap;
 bcc_symbol_option SymbolOption = {.use_debug_file = 1,
@@ -88,17 +90,23 @@ void logHandler(const char *format, va_list args)
 //--------------------------------------------------------------------
 void telemetryReady()
 {
+    //
     // Set PID
+    //
     pid_t act_pid = getpid();
     int key = CONFIG_PID_KEY;
     telemetryMapUpdateElem(mapFds[CONFIG_INDEX], &key, &act_pid, MAP_UPDATE_CREATE_OR_OVERWRITE);
 
+    //
     // Set runstate
+    //
     int state = TRACER_RUNNING;
     key = RUNSTATE_KEY;
     telemetryMapUpdateElem(mapFds[RUNSTATE_INDEX], &key, &state, MAP_UPDATE_CREATE_OR_OVERWRITE);
 
+    //
     // Init the PIDs
+    //
     int init_pid = -1;
     for(int i=0; i<MAX_PIDS; i++)
     {
@@ -110,7 +118,9 @@ void telemetryReady()
         telemetryMapUpdateElem(mapFds[PIDS_INDEX], &i, &pids[i], MAP_UPDATE_CREATE_OR_OVERWRITE);
     }
 
+    //
     // Set targeted syscalls
+    //
     for (auto event : events)
     {
         auto schemaItr = std::find_if(schemas.begin(), schemas.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
@@ -124,6 +134,13 @@ void telemetryReady()
             telemetryMapUpdateElem(mapFds[SYSCALL_INDEX], &num, static_cast<void*>(&(*schemaItr)), MAP_UPDATE_CREATE_OR_OVERWRITE);
         }
     }
+
+    //
+    // Signal the consuming thread that telemetry has been initialized
+    //
+    pthread_mutex_lock(&mutex);
+    pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&mutex);
 }
 
 //--------------------------------------------------------------------
@@ -437,6 +454,13 @@ void EbpfTracerEngine::Poll()
 //--------------------------------------------------------------------
 void EbpfTracerEngine::Consume()
 {
+    //
+    // We wait until sysinternalsEBPF is ready (telemetryReady is completed)
+    //
+    pthread_mutex_lock(&mutex);
+    pthread_cond_wait(&cond, &mutex);
+    pthread_mutex_unlock(&mutex);
+
     // blocking pop return optional<T>, evaluates to "true" if we get a value
     // "false" if we've been cancelled
     // auto stacks = BPF->get_stack_table("stack_traces");
