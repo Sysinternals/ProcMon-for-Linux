@@ -17,6 +17,7 @@
 #include "procmon_configuration.h"
 
 extern std::string debugTraceFile;
+extern bool debugTrace;
 
 void ProcmonConfiguration::HandlePidArgs(char *pidArgs)
 {
@@ -72,6 +73,7 @@ void ProcmonConfiguration::HandleLogArg(char * filepath)
     if(filepath)
     {
         debugTraceFilePath = std::string(filepath);
+        debugTrace = true;
     }
 }
 

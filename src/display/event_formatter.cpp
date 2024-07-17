@@ -42,7 +42,9 @@ std::string EventFormatter::GetOperation(ITelemetry &event)
 
 std::string EventFormatter::GetDuration(ITelemetry &event)
 {
-    return std::to_string((double) event.duration/1000000);
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(3) << (double) event.duration/1000000;
+    return oss.str();
 }
 
 std::string EventFormatter::GetResult(ITelemetry &event)

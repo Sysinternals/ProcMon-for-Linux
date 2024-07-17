@@ -33,6 +33,7 @@ int machineId = 0;
 int     g_clkTck = 100;
 size_t  g_pwEntrySize = 0;
 
+bool debugTrace = false;
 std::vector<Event> events;
 std::vector<struct SyscallSchema> schemas = Utils::CollectSyscallSchema();
 void* symResolver = NULL;
@@ -453,7 +454,7 @@ void EbpfTracerEngine::Poll()
         sizeof(mapObjects) / sizeof(*mapObjects),
         mapObjects,
         NULL,
-        false
+        debugTrace
     };
 
     const char* const argv[] = {"procmon"};
