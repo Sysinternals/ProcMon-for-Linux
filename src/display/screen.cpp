@@ -1552,12 +1552,15 @@ void Screen::showDetailView()
     // grab stack trace for current event
     eventTrace = &event->stackTrace;
 
-
-    mvwprintw(detailWin, y++, 2, "Stack Trace:");
-    // add stack trace to window
-    for(int i = 0; i < eventTrace->userIPs.size() && y < detailViewHeight - 1; i++)
+    // Resolve symbols
+    if(ResolveSymbols(eventTrace, event->pid))
     {
-        mvwprintw(detailWin, y++, 4, "0x%-8X %s", eventTrace->userIPs[i], eventTrace->userSymbols[i].c_str());
+        mvwprintw(detailWin, y++, 2, "Stack Trace:");
+        // add stack trace to window
+        for(int i = 0; i < eventTrace->userIPs.size() && y < detailViewHeight - 1; i++)
+        {
+            mvwprintw(detailWin, y++, 4, "0x%-8X %s", eventTrace->userIPs[i], eventTrace->userSymbols[i].c_str());
+        }
     }
 
     // draw border
@@ -1567,6 +1570,52 @@ void Screen::showDetailView()
     refreshScreen();
 }
 
+// ----------------------------------------------------------------------------
+// ResolveSymbols
+// ----------------------------------------------------------------------------
+bool Screen::ResolveSymbols(StackTrace* stack, pid_t pid)
+{
+    void* symResolver = NULL;
+
+    if (symEnginePidMap.find(pid) == symEnginePidMap.end())
+    {
+        symResolver = bcc_symcache_new(pid, &SymbolOption);
+        symEnginePidMap[pid] = symResolver;
+
+    }
+    else
+    {
+        symResolver = symEnginePidMap[pid];
+    }
+
+    bcc_symbol symbol;
+    for (int i = 0; i < stack->userIPs.size(); i++)
+    {
+        int ret = bcc_symcache_resolve(symResolver, stack->userIPs[i], &symbol);
+
+        if (ret != 0)
+        {
+            if (symbol.module != NULL)
+            {
+                std::stringstream ss;
+                ss << symbol.module << "![UNKNOWN]";
+                stack->userSymbols.push_back(ss.str());
+            }
+            else
+            {
+                stack->userSymbols.push_back("[UNKNOWN]");
+            }
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << symbol.module << "!" << symbol.demangle_name;
+            stack->userSymbols.push_back(ss.str());
+        }
+    }
+
+    return true;
+}
 
 void Screen::closeDetailView()
 {

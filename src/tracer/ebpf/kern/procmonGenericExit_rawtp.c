@@ -71,6 +71,8 @@ int genericRawExit(struct bpf_our_raw_tracepoint_args *ctx)
     //
     eventOutput((void*)ctx, &eventMap, BPF_F_CURRENT_CPU, event, sizeof(struct SyscallEvent));
 
+    bpf_map_delete_elem(&syscallsMap, &pidTid);
+
     return EBPF_RET_UNUSED;
 }
 

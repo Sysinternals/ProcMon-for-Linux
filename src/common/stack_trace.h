@@ -34,16 +34,16 @@ struct StackTrace
     {
         std::string ret;
 
-        if(userIPs.size() == 0 && userSymbols.size() == 0)
+        if(userIPs.size() == 0)
         {
             return "";
         }
 
-        ret += std::to_string(userIPs[0]) + "$" + userSymbols[0];
+        ret += std::to_string(userIPs[0]);
 
         for(int i = 1; i < userIPs.size(); i++)
         {
-            ret += ";" + std::to_string(userIPs[i]) + "$" + userSymbols[i];
+            ret += ";" + std::to_string(userIPs[i]);
         }
         return ret;
     }
@@ -55,10 +55,7 @@ struct StackTrace
 
         while(std::getline(stream, token, ';'))
         {
-            int location = token.find('$');
-
-            userIPs.push_back(std::stoull(token.substr(0, location)));
-            userSymbols.push_back(token.substr(location+1, token.size()));
+            userIPs.push_back(std::stoull(token));
         }
     }
 

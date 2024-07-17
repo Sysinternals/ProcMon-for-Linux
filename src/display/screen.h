@@ -36,6 +36,12 @@
 #include "event_formatter.h"
 #include "../configuration/procmon_configuration.h"
 
+// Symbol resolution code
+#include "bcc_elf.h"
+#include "bcc_perf_map.h"
+#include "bcc_proc.h"
+#include "bcc_syms.h"
+
 // default screen dimensions
 #define MINIMUM_HEIGHT  15
 #define MINIMUM_WIDTH   100
@@ -174,6 +180,14 @@ class Screen {
         std::vector<ITelemetry> eventList;
         std::vector<int> idList;
 
+        // Symbol resolution
+        std::unordered_map<int, void*> symEnginePidMap;
+        bcc_symbol_option SymbolOption = {.use_debug_file = 1,
+                                        .check_debug_file_crc = 1,
+                                        .lazy_symbolize = 1,
+                                        .use_symbol_type = (1 << STT_FUNC) | (1 << STT_GNU_IFUNC)};
+
+
         // A list of formatters used to special case the output formatting on a per sys call basis
         // NOTE: The first element in the vector is always our default formatter with a syscall name of "".
         //       When inserting formatters into this vector always push_back().
@@ -267,6 +281,7 @@ class Screen {
 
         std::string DecodeArguments(ITelemetry event);
         int FindSyscall(std::string& syscallName);
+        bool ResolveSymbols(StackTrace* stack, pid_t pid);
 };
 
 #endif // SCREEN_H

@@ -38,13 +38,6 @@ std::vector<int> pids;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;;
 
-std::unordered_map<int, void*> symEnginePidMap;
-bcc_symbol_option SymbolOption = {.use_debug_file = 1,
-                                  .check_debug_file_crc = 1,
-                        		  .lazy_symbolize = 1,
-                                  .use_symbol_type = (1 << STT_FUNC) | (1 << STT_GNU_IFUNC)};
-
-
 const ebpfSyscallRTPprog        RTPenterProgs[] =
 {
     {"genericRawEnter", EBPF_GENERIC_SYSCALL}
@@ -545,50 +538,18 @@ void EbpfTracerEngine::Consume()
 //
 // GetStackTraceForIPs
 //
-// Gets callstack
+// Gets callstack. Since symbol resolution takes a substantial amount
+// of time we only store the IPs during event processing, otherwise we
+// end up saturating the perf buffer. When a user clicks into an event
+// we resolve the symbols at that time.
 //
 //--------------------------------------------------------------------
 StackTrace EbpfTracerEngine::GetStackTraceForIPs(int pid, uint64_t *userIPs, uint64_t userCount)
 {
     StackTrace result;
-    void* symResolver = NULL;
-
-    if (symEnginePidMap.find(pid) == symEnginePidMap.end())
-    {
-        symResolver = bcc_symcache_new(pid, &SymbolOption);
-        symEnginePidMap[pid] = symResolver;
-
-    }
-    else
-    {
-        symResolver = symEnginePidMap[pid];
-    }
-
-    bcc_symbol symbol;
     for (int i = 0; i < userCount; i++)
     {
         result.userIPs.push_back(userIPs[i]);
-        int ret = bcc_symcache_resolve(symResolver, userIPs[i], &symbol);
-
-        if (ret != 0)
-        {
-            if (symbol.module != NULL)
-            {
-                std::stringstream ss;
-                ss << symbol.module << "![UNKNOWN]";
-                result.userSymbols.push_back(ss.str());
-            }
-            else
-            {
-                result.userSymbols.push_back("[UNKNOWN]");
-            }
-        }
-        else
-        {
-            std::stringstream ss;
-            ss << symbol.module << "!" << symbol.demangle_name;
-            result.userSymbols.push_back(ss.str());
-        }
     }
 
     return result;
