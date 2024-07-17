@@ -213,6 +213,9 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
 
     // List of all syscalls that contain pointer params
     pointerSyscalls = Utils::Linux64PointerSycalls;
+
+    // Set initial state to running
+    _tracerEngine->SetRunState(TRACER_RUNNING);
 }
 
 uint64_t ProcmonConfiguration::GetStartTime()

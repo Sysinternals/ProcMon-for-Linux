@@ -9,6 +9,10 @@ URL:		https://github.com/Sysinternals/Procmon-for-Linux
 %description
 Sysinternals process monitor utility
 
+# Dependencies
+Requires: sysinternalsebpf >= 1.4
+Requires: elfutils-libelf > 0.0
+
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{_bindir}
