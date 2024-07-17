@@ -49,24 +49,29 @@ int main(int argc, char *argv[])
     */
     curs_set(0);
 
-    // Configure logging
-    el::Loggers::addFlag(el::LoggingFlag::HierarchicalLogging);
-    el::Loggers::addFlag(el::LoggingFlag::AutoSpacing);
-    el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
-    el::Loggers::addFlag(el::LoggingFlag::HierarchicalLogging);
-    el::Loggers::setLoggingLevel(el::Level::Error);
-
     // Extrace eBPF programs
     ExtractEBPFPrograms();
 
     // Program initialization: create global config from args
     auto config = std::make_shared<ProcmonConfiguration>(argc, argv);
 
-    LOG(INFO) << "Tracing " << config->events.size() << " system calls";
+    LOG(DEBUG) << "Tracing " << config->events.size() << " system calls";
 
     // Configure logging
-    el::Configurations defaultConf;
-    defaultConf.setToDefault();
+    if(config->GetDebugTraceFilePath().size() != 0)
+    {
+        el::Configurations defaultConf;
+        defaultConf.setToDefault();
+
+        defaultConf.set(el::Level::Debug, el::ConfigurationType::Format, "%datetime [%level] %msg");
+        defaultConf.set(el::Level::Global, el::ConfigurationType::MaxLogFileSize, "5242880");
+
+        defaultConf.set(el::Level::Info, el::ConfigurationType::Filename, config->GetDebugTraceFilePath());
+        defaultConf.set(el::Level::Error, el::ConfigurationType::Filename, config->GetDebugTraceFilePath());
+        defaultConf.set(el::Level::Debug, el::ConfigurationType::Filename, config->GetDebugTraceFilePath());
+
+        el::Loggers::reconfigureAllLoggers(defaultConf);
+    }
 
     if(config->GetHeadlessMode())
     {

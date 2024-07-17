@@ -88,7 +88,7 @@ void Screen::initScreen(std::shared_ptr<ProcmonConfiguration> config)
     searchCount = 0;
     filter = "";
 
-    LOG(INFO) << "ScreenH:" << screenH << "ScreenW:" << screenW << "Column Height:" << columnHeight;
+    LOG(DEBUG) << "ScreenH:" << screenH << "ScreenW:" << screenW << "Column Height:" << columnHeight;
 
     // start initializing UI components
     initHeader();
@@ -122,9 +122,9 @@ void Screen::run()
     int nonRefreshCount = 0;
     int64_t duration = 0;
 
-    LOG(INFO) << "Starting main UI thread";
-    LOG(INFO) << "Event Threshold:" << eventRefreshThreshold;
-    LOG(INFO) << "Tracing Events:" << config->events.size();
+    LOG(DEBUG) << "Starting main UI thread";
+    LOG(DEBUG) << "Event Threshold:" << eventRefreshThreshold;
+    LOG(DEBUG) << "Tracing Events:" << config->events.size();
 
     // check to see if we are loading a trace file
     if(config->GetTraceFilePath().compare("") != 0)
@@ -313,7 +313,7 @@ void Screen::run()
                         case KEY_F(3):
                             searchCount++;
                             displaySearchEvents(idList, searchCount);
-                            LOG(INFO) << "idList Size: " << idList.size() << " searchCount: " << searchCount;
+                            LOG(DEBUG) << "idList Size: " << idList.size() << " searchCount: " << searchCount;
                             break;
 
                         case KEY_F(9):
@@ -347,7 +347,7 @@ void Screen::run()
                 {
                     // query datastore for matching event ids and move to line
                     idList = storageEngine->QueryIdsBySearch(filter, config->pids, screenConfig.getColumnSort(), screenConfig.getColumnAscending(), config->events);
-                    LOG(INFO) << "Search returned" << idList.size() << "results";
+                    LOG(DEBUG) << "Search returned" << idList.size() << "results";
 
                     // display search event
                     displaySearchEvents(idList, searchCount);
@@ -519,7 +519,7 @@ void Screen::run()
 
                 default:
                     if (input != ERR)
-                        LOG(INFO) << "Not in switch statement" << input;
+                        LOG(DEBUG) << "Not in switch statement" << input;
             }
         }
 
@@ -538,7 +538,7 @@ void Screen::run()
                 auto newEventList = storageEngine->QueryByEventsinPage(config->pids, getCurrentPage(), getTotalLines(), screenConfig.getColumnSort(), screenConfig.getColumnAscending(), config->events);
                 int i = 0;
 
-                LOG(INFO) << "New Eventlist Size" << newEventList.size();
+                LOG(DEBUG) << "New Eventlist Size" << newEventList.size();
 
                 if(newEventList.size() > eventList.size())
                 {
@@ -1175,7 +1175,7 @@ void Screen::resize()
     // check to see if current highlight line is now off the screen
     if(totalLines < currentLine) currentLine = totalLines;
 
-    LOG(INFO) << "Resize detected! ScreenH:" << screenH << "ScreenW:" << screenW << "Column Height:" << columnHeight;
+    LOG(DEBUG) << "Resize detected! ScreenH:" << screenH << "ScreenW:" << screenW << "Column Height:" << columnHeight;
 
     // resize header & footer
     resizeHeader();
@@ -1317,7 +1317,7 @@ void Screen::displaySearchEvents(std::vector<int> idList, int searchCount)
             currentLine = getTotalLines();
         }
 
-        LOG(INFO) << "targetPage: " << targetPage << " currentLine: " << currentLine << " id: " << id << "TotalLines" << getTotalLines();
+        LOG(DEBUG) << "targetPage: " << targetPage << " currentLine: " << currentLine << " id: " << id << "TotalLines" << getTotalLines();
 
         // check if we actually need to query datastore or if its on the same page
         if(targetPage != currentPage)
@@ -1777,7 +1777,7 @@ void Screen::handleMouseEvent(MEVENT* event)
             break;
 
         default:
-            LOG(INFO) << "Unknown mouse click";
+            LOG(DEBUG) << "Unknown mouse click";
             break;
     }
 }

@@ -60,6 +60,7 @@ private:
     std::string date;
     bool headless = false;
     std::string traceFilePath = "";
+    std::string debugTraceFilePath = "";
     std::string outputTraceFilePath = "";
 
     void HandlePidArgs(char *pidArgs);
@@ -69,6 +70,7 @@ private:
     void HandleEventArgs(char *eventArgs);
 
     void HandleFileArg(char * filepath);
+    void HandleLogArg(char * filepath);
 
     std::string ConvertEpocTime(time_t time);
 
@@ -88,5 +90,6 @@ public:
     std::string GetStartDate() { return date; }
     bool GetHeadlessMode() { return headless; }
     std::string GetTraceFilePath() { return traceFilePath; }
+    std::string GetDebugTraceFilePath() { return debugTraceFilePath; }
     std::string GetOutputTraceFilePath() { return outputTraceFilePath; }
 };

@@ -25,6 +25,8 @@
 #include "bcc_proc.h"
 #include "bcc_syms.h"
 
+std::string debugTraceFile;
+
 double g_bootSecSinceEpoch = 0;
 int machineId = 0;
 
@@ -71,6 +73,31 @@ int mapFds[sizeof(mapObjects) / sizeof(*mapObjects)];
 //--------------------------------------------------------------------
 void logHandler(const char *format, va_list args)
 {
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int required_size = vsnprintf(nullptr, 0, format, args_copy) + 1;
+    va_end(args_copy);
+
+    if(required_size <= 0)
+    {
+        return;
+    }
+
+    // Allocate buffer
+    char *buffer = new char[required_size];
+    if(buffer == nullptr)
+    {
+        return;
+    }
+
+    // Format the message
+    vsnprintf(buffer, required_size, format, args);
+
+    // Log the message using Easylogging++
+    LOG(DEBUG) << buffer;
+
+    // Clean up
+    delete[] buffer;
     //vfprintf(stderr, format, args);
 }
 

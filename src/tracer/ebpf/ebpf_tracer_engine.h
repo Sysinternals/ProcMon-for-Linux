@@ -65,9 +65,6 @@ private:
 
     std::map<int, void*> SymbolCacheMap;
 
-    // use the same symbol settings as the defaults from bcc
-    //static bcc_symbol_option SymbolOption;
-
     void Poll();
     void Consume();
 

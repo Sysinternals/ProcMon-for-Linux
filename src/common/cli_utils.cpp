@@ -37,6 +37,7 @@ namespace CLIUtils
         std::cout << "      -e/--events              Comma separated list of system calls to monitor" << std::endl;
         std::cout << "      -c/--collect [FILEPATH]  Option to start Procmon in a headless mode" << std::endl;
         std::cout << "      -f/--file FILEPATH       Open a Procmon trace file" << std::endl;
+        std::cout << "      -l/--log FILEPATH        Log debug traces to file" << std::endl;
 
         if (shouldExit)
             FastExit();

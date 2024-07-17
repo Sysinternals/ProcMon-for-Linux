@@ -56,6 +56,7 @@ Usage: procmon [OPTIONS]
       -e/--events              Comma separated list of system calls to monitor
       -c/--collect [FILEPATH]  Option to start Procmon in a headless mode
       -f/--file FILEPATH       Open a Procmon trace file
+      -l/--log FILEPATH        Log debug traces to file
 ```
 
 ### Examples

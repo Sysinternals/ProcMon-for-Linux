@@ -16,6 +16,8 @@
 
 #include "procmon_configuration.h"
 
+extern std::string debugTraceFile;
+
 void ProcmonConfiguration::HandlePidArgs(char *pidArgs)
 {
     std::stringstream pidStream(pidArgs);
@@ -65,6 +67,14 @@ void ProcmonConfiguration::HandleEventArgs(char *eventArgs)
     }
 }
 
+void ProcmonConfiguration::HandleLogArg(char * filepath)
+{
+    if(filepath)
+    {
+        debugTraceFilePath = std::string(filepath);
+    }
+}
+
 void ProcmonConfiguration::HandleFileArg(char * filepath)
 {
     std::ifstream testFilePath(filepath);
@@ -89,7 +99,7 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
         exit(1);
     }
 
-    LOG(INFO) << "Tv_sec " << startTime.tv_sec << " Tv_nsec " << startTime.tv_nsec;
+    LOG(DEBUG) << "Tv_sec " << startTime.tv_sec << " Tv_nsec " << startTime.tv_nsec;
 
     // setup default output trace file
     outputTraceFilePath = "procmon_" + date + "_" + epocStartTime + ".db";
@@ -101,6 +111,7 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
         { "events",        required_argument, NULL, 'e' },
         { "collect",       optional_argument, NULL, 'c' },
         { "file",          required_argument, NULL, 'f' },
+        { "log",           required_argument, NULL, 'l' },
         { "help",          no_argument,       NULL, 'h' },
         { NULL,            0,                 NULL,  0  }
     };
@@ -109,7 +120,7 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
     int option_index = 0;
     while (true)
     {
-        if ((c = getopt_long(argc, argv, "hc:p:s:e:f:", long_options, &option_index)) == -1)
+        if ((c = getopt_long(argc, argv, "hc:p:s:e:f:l:", long_options, &option_index)) == -1)
             break;
 
         switch (c)
@@ -145,13 +156,17 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
                 HandleFileArg(optarg);
                 break;
 
+            case 'l':
+                HandleLogArg(optarg);
+                break;
+
             default:
                 // Invalid argument
                 CLIUtils::DisplayUsage(true);
         }
     }
 
-    LOG(INFO) << "Output trace file:" << outputTraceFilePath;
+    LOG(DEBUG) << "Output trace file:" << outputTraceFilePath;
 
     // Get schema of all syscalls on system
     syscallSchema = Utils::CollectSyscallSchema();
