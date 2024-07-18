@@ -1,0 +1,6 @@
+FROM mcr.microsoft.com/mirror/docker/library/rockylinux:8
+
+# Install dependencies
+COPY install-rocky-dependencies.sh /usr/local/bin/install_dependencies.sh
+RUN chmod +x /usr/local/bin/install_dependencies.sh && \
+    /usr/local/bin/install_dependencies.sh
