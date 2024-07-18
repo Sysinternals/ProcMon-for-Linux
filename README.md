@@ -13,41 +13,12 @@ Process Monitor (Procmon) is a Linux reimagining of the classic Procmon tool fro
 
 ## Install Procmon
 
-Checkout our [install instructions](INSTALL.md) for distribution-specific steps to install Procmon.
+Please see installation instructions [here](INSTALL.md).
 
-## Building Procmon from source
-
-1.  ### Install build dependencies
-
-    ```bash
-    sudo apt-get -y install bison build-essential flex git libedit-dev \
-      libllvm6.0 llvm-6.0-dev libclang-6.0-dev python zlib1g-dev libelf-dev
-    ```
-
-2.  ### Build Procmon
-
-    ```bash
-    git clone https://github.com/Microsoft/Procmon-for-Linux
-    cd Procmon-for-Linux
-    mkdir build
-    cd build
-    cmake ..
-    make
-    ```
-
-### Building Procmon Packages
-
-The distribution packages for Procmon for Linux are constructed utilizing `cpack`.
-
-To build a `deb` package of Procmon on Ubuntu, simply run:
-
-```sh
-cd build
-cpack ..
-```
+## Build Procmon
+Please see build instructions [here](BUILD.md).
 
 ## Usage
-
 ```txt
 Usage: procmon [OPTIONS]
    OPTIONS
