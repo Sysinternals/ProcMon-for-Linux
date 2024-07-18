@@ -1,5 +1,5 @@
 /*
-    ProcDump for Linux
+    Procmon for Linux
 
     Copyright (c) Microsoft Corporation
 
@@ -16,7 +16,7 @@
 
 //====================================================================
 //
-// ProcDumpVersion.h.in
+// ProcmonVersion.h.in
 //
 // Version information
 //

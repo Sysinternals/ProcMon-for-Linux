@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#    ProcDump for Linux
+#    Procmon for Linux
 #
 #    Copyright (c) Microsoft Corporation
 #
