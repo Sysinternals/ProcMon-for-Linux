@@ -67,8 +67,8 @@ set(LD "/usr/bin/ld")
 #
 # enable Debug while pre-release; re-enable it post-release to add symbols to binary
 #
-set(CMAKE_BUILD_TYPE Debug)
-option(DEBUG_K "Enter debug mode" On)
+#set(CMAKE_BUILD_TYPE Debug)
+#option(DEBUG_K "Enter debug mode" On)
 
 #
 # package name
