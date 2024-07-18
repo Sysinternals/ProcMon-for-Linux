@@ -5,14 +5,13 @@
 DEBIAN_FRONTEND=noninteractive
 echo "APT::Get::Assume-Yes \"true\";" > /etc/apt/apt.conf.d/90assumeyes
 
+sudo apt-get update
+sudo apt -y install software-properties-common
+sudo add-apt-repository "deb http://security.ubuntu.com/ubuntu xenial-security main"
+sudo apt-get update
 
-apt-get update
-apt -y install software-properties-common
-add-apt-repository "deb http://security.ubuntu.com/ubuntu xenial-security main"
-apt-get update
-
-apt upgrade -y \
-    && apt-get install -y --no-install-recommends \
+sudo apt upgrade -y \
+    && sudo apt-get install -y --no-install-recommends \
         build-essential \
         gcc \
         g++ \
@@ -34,4 +33,4 @@ apt upgrade -y \
 
 # install debbuild
 wget https://github.com/debbuild/debbuild/releases/download/19.5.0/debbuild_19.5.0-ascherer.ubuntu18.04_all.deb \
-    && dpkg -i debbuild_19.5.0-ascherer.ubuntu18.04_all.deb
+    && sudo dpkg -i debbuild_19.5.0-ascherer.ubuntu18.04_all.deb
