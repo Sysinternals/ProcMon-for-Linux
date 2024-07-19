@@ -1,5 +1,5 @@
 # Process Monitor for Linux (Preview) [![Build Status](https://dev.azure.com/sysinternals/Tools/_apis/build/status/Sysinternals.ProcMon-for-Linux?repoName=Sysinternals%2FProcMon-for-Linux&branchName=main)](https://dev.azure.com/sysinternals/Tools/_build/latest?definitionId=342&repoName=Sysinternals%2FProcMon-for-Linux&branchName=main)
-Process Monitor (Procmon) is a Linux reimagining of the classic Procmon tool from the Sysinternals suite of tools for Windows.  Procmon provides a convenient and efficient way for Linux developers to trace the syscall activity on the system.  
+Process Monitor (Procmon) is a Linux reimagining of the classic Procmon tool from the Sysinternals suite of tools for Windows.  Procmon provides a convenient and efficient way for Linux developers to trace the syscall activity on the system.
 
 ![Procmon in use](procmon.gif "Procmon in use")
 
@@ -7,47 +7,18 @@ Process Monitor (Procmon) is a Linux reimagining of the classic Procmon tool fro
 
 ## Requirements
 
-* OS: Ubuntu 18.04 lts 
+* OS: Ubuntu 18.04 lts
 * `cmake` >= 3.14 (build-time only)
 * `libsqlite3-dev` >= 3.22 (build-time only)
 
 ## Install Procmon
 
-Checkout our [install instructions](INSTALL.md) for distribution-specific steps to install Procmon.
+Please see installation instructions [here](INSTALL.md).
 
-## Building Procmon from source
-
-1.  ### Install build dependencies
-
-    ```bash
-    sudo apt-get -y install bison build-essential flex git libedit-dev \
-      libllvm6.0 llvm-6.0-dev libclang-6.0-dev python zlib1g-dev libelf-dev
-    ```
-
-2.  ### Build Procmon
-
-    ```bash
-    git clone https://github.com/Microsoft/Procmon-for-Linux
-    cd Procmon-for-Linux
-    mkdir build
-    cd build
-    cmake ..
-    make
-    ```
-
-### Building Procmon Packages 
-
-The distribution packages for Procmon for Linux are constructed utilizing `cpack`.
-
-To build a `deb` package of Procmon on Ubuntu, simply run:
-
-```sh
-cd build
-cpack ..
-```
+## Build Procmon
+Please see build instructions [here](BUILD.md).
 
 ## Usage
-
 ```txt
 Usage: procmon [OPTIONS]
    OPTIONS
@@ -56,6 +27,7 @@ Usage: procmon [OPTIONS]
       -e/--events              Comma separated list of system calls to monitor
       -c/--collect [FILEPATH]  Option to start Procmon in a headless mode
       -f/--file FILEPATH       Open a Procmon trace file
+      -l/--log FILEPATH        Log debug traces to file
 ```
 
 ### Examples

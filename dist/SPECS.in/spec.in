@@ -1,0 +1,35 @@
+Name:		procmon
+Version:	@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@
+Release:	@PROJECT_VERSION_TWEAK@%{?dist}
+Summary:	Sysinternals process monitor utility
+
+License:	MIT
+URL:		https://github.com/Sysinternals/Procmon-for-Linux
+
+%description
+Sysinternals process monitor utility
+
+# Dependencies
+Requires: sysinternalsebpf >= 1.4
+Requires: elfutils-libelf > 0.0
+
+%install
+rm -rf $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT/%{_bindir}
+cp procmon $RPM_BUILD_ROOT/%{_bindir}
+mkdir -p $RPM_BUILD_ROOT/usr/share/man/man1
+cp procmon.1.gz $RPM_BUILD_ROOT/usr/share/man/man1
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%{_bindir}/procmon
+/usr/share/man/man1/procmon.1.gz
+
+%changelog
+@CHANGE_LOG@
+
+%description
+Process Monitor (Procmon) is part of the Sysinternals suite of tools.  Procmon provides a convenient and efficient way for Linux developers to trace the syscall
+activity on the system.

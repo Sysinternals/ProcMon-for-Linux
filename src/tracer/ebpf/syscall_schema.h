@@ -1,5 +1,18 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+/*
+    Procmon-for-Linux
+
+    Copyright (c) Microsoft Corporation
+
+    All rights reserved.
+
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ""Software""), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 #pragma once
 
@@ -11,66 +24,41 @@
 #include <vector>
 #include <iostream>
 
-namespace SyscallSchema
-{
-    enum class ArgTag
-    {
-        UNKNOWN, // Catch all for cases where arg type isn't known yet.
-        INT,
-        UNSIGNED_INT,
-        SIZE_T,
-        PID_T,
-        LONG,
-        UNSIGNED_LONG,
-        CHAR_PTR,
-        CONST_CHAR_PTR,
-        FD,
-        PTR,
-        UINT32
-    };
-
-    struct SyscallSchema
-    {
-        // We should probably just be passing the syscall number back and forth instead.
-        char syscallName[100];
-        // It's probably not necessary to pass this info to kernel land and we can just store
-        // it in an userland only map to be used by the UI.
-        char argNames[6][100];
-        // The key data structure necessary to infer what needs to be done.
-        enum ArgTag types[6];
-        int usedArgCount;
-    };
+#include "kern/procmonEBPF_common.h"
+#include "syscalls.h"
 
     class Utils
     {
     public:
-        static std::map<std::string, ArgTag> ArgTypeStringToArgTag;
-        static std::map<std::string, int> SyscallNameToNumber;
-        static std::map<int, std::string> SyscallNumberToName;
+        static std::map<std::string, ProcmonArgTag> ArgTypeStringToArgTag;
         static std::vector<std::string> Linux64PointerSycalls;
 
         static int GetSyscallNumberForName(const std::string& name)
         {
-            auto maybeName = SyscallNameToNumber.find(name);
-            if (maybeName != SyscallNameToNumber.end())
-                return maybeName->second;
-            else
-                return -1;
+            for(const auto& syscall : syscalls)
+            {
+                if (syscall.name == name)
+                {
+                    return syscall.number;
+                }
+            }
+
+            return -1;
         }
 
-        static ArgTag GetArgTagForArg(const std::string &argumentName, const std::string &argumentType)
+        static ProcmonArgTag GetArgTagForArg(const std::string &argumentName, const std::string &argumentType)
         {
             auto maybeTag = ArgTypeStringToArgTag.find(argumentType);
             if (maybeTag != ArgTypeStringToArgTag.end())
                 return maybeTag->second;
             else if (argumentName == "fd")
-                return ArgTag::FD;
+                return ProcmonArgTag::FD;
             else if (argumentType.find("*") != std::string::npos)
             {
-                return ArgTag::PTR;
+                return ProcmonArgTag::PTR;
             }
             else
-                return ArgTag::UNKNOWN;
+                return ProcmonArgTag::NOTKNOWN;
         }
 
         static std::vector<struct SyscallSchema> CollectSyscallSchema()
@@ -86,21 +74,18 @@ namespace SyscallSchema
             // Regex to parse arg and name
             std::regex argTypeAndName("([a-z\\* _]+)+ ([a-z_]+)$");
 
-            for (const auto &fileEntry : std::experimental::filesystem::directory_iterator("/sys/kernel/debug/tracing/events/syscalls"))
+            for(const auto& syscall : syscalls)
             {
-                std::string filepath = fileEntry.path();
-
+                SyscallSchema schema;
                 std::smatch match;
-                if (std::regex_match(filepath, match, filenameRegex))
+
+                if (syscall.entrypoint.compare(0, 4, "sys_") == 0)
                 {
-                    struct SyscallSchema schema;
+                    std::string sysDir = "sys_enter_" + syscall.entrypoint.substr(4);
+                    std::strcpy(schema.syscallName, syscall.name.c_str());
 
-                    // Extract the syscall name using the filename regex.
-                    // Messy, but we know we're looking exactly for the 2nd group.
-                    std::strcpy(schema.syscallName, match[2].str().c_str());
-
-                    // Change dir to format directory.
-                    std::ifstream file(filepath + "/format");
+                    std::string filePath = "/sys/kernel/debug/tracing/events/syscalls/" + sysDir + "/format";
+                    std::ifstream file(filePath);
 
                      // Skip all that we don't care about.
                     std::string line;
@@ -137,4 +122,3 @@ namespace SyscallSchema
     private:
         Utils();
     };
-} // namespace SyscallSchema

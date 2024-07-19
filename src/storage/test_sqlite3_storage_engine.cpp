@@ -1,5 +1,18 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT license.
+/*
+    Procmon-for-Linux
+
+    Copyright (c) Microsoft Corporation
+
+    All rights reserved.
+
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ""Software""), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
@@ -18,7 +31,7 @@
 typedef ITelemetry MockTelemetry;
 typedef StackTrace MockTrace;
 
-static std::vector<pid_t> pidRange(pid_t start, pid_t end) 
+static std::vector<pid_t> pidRange(pid_t start, pid_t end)
 {
     std::vector<pid_t> result(end-start);
     std::generate(result.begin(), result.end(), [i = start] () mutable { return i++; });
@@ -32,13 +45,13 @@ static bool telemetryMatches(ITelemetry first, ITelemetry second)
 }
 
 static bool checkMatches(const std::vector<MockTelemetry> results, std::map<std::string, pid_t> seenProcesses, std::vector<pid_t> seenPids, uint count)
-{   
+{
     bool allTrue = true;
     for (auto& telemetry: results)
     {
         pid_t pid = seenProcesses[telemetry.processName];
         allTrue = allTrue && (std::find(seenPids.begin(), seenPids.end(), pid) != seenPids.end());
-    } 
+    }
     return allTrue && results.size() == count;
 }
 
@@ -48,7 +61,7 @@ static void storeOneItem(Sqlite3StorageEngine& engine, pid_t rangeStart, pid_t r
     std::uniform_int_distribution<int> pidDistribution(rangeStart, rangeEnd-1);
     std::uniform_int_distribution<int> resultDistribution(-20, 20);
     std::uniform_int_distribution<int> syscallIndexPool(0, syscalls.size()-1);
-    
+
     auto pidDice = std::bind(pidDistribution, generator);
     auto resultDice = std::bind(resultDistribution, generator);
     auto syscallDice = std::bind(syscallIndexPool, generator);
@@ -73,14 +86,14 @@ static void storeOneItem(Sqlite3StorageEngine& engine, pid_t rangeStart, pid_t r
     CHECK(result);
 }
 
-static std::map<std::string, pid_t> storeNItems(Sqlite3StorageEngine& engine, uint count, pid_t rangeStart, pid_t rangeEnd, int resultStart, int resultEnd, 
+static std::map<std::string, pid_t> storeNItems(Sqlite3StorageEngine& engine, uint count, pid_t rangeStart, pid_t rangeEnd, int resultStart, int resultEnd,
     const std::vector<Event> syscalls, std::map<int, uint>& resFreq, std::map<pid_t, uint>& pidFreq)
 {
     std::default_random_engine generator;
     std::uniform_int_distribution<int> pidDistribution(rangeStart, rangeEnd-1);
     std::uniform_int_distribution<int> resultDistribution(resultStart, resultEnd);
     std::uniform_int_distribution<int> syscallIndexPool(0, syscalls.size()-1);
-    
+
     auto pidDice = std::bind(pidDistribution, generator);
     auto resultDice = std::bind(resultDistribution, generator);
     auto syscallDice = std::bind(syscallIndexPool, generator);
@@ -90,7 +103,7 @@ static std::map<std::string, pid_t> storeNItems(Sqlite3StorageEngine& engine, ui
     std::vector<MockTelemetry> data;
 
     uint index = 0;
-    for (std::vector<ITelemetry>::size_type i = 0; i < count; i++) 
+    for (std::vector<ITelemetry>::size_type i = 0; i < count; i++)
     {
         MockTrace trace;
         trace.userIPs = {10, 20, 40};
@@ -123,7 +136,7 @@ static std::map<std::string, pid_t> storeNItems(Sqlite3StorageEngine& engine, ui
 }
 
 TEST_CASE("storage engine must be initialized", "[Sqlite3StorageEngine]") {
-    
+
     Sqlite3StorageEngine engine;
 
     SECTION("initialization works") {
@@ -153,7 +166,7 @@ TEST_CASE("storage engine can add items", "[Sqlite3StorageEngine]") {
     mockSyscalls.emplace_back("sys_read");
     mockSyscalls.emplace_back("sys_open");
     mockSyscalls.emplace_back("sys_mmap");
-    
+
     Sqlite3StorageEngine engine;
     CHECK(engine.Initialize(mockSyscalls));
     CHECK(engine.Size() == 0);
@@ -168,13 +181,13 @@ TEST_CASE("storage engine can add items", "[Sqlite3StorageEngine]") {
         std::vector<MockTelemetry> results = engine.QueryByPids(pidRange(1000, 1010));
         CHECK(results.size() == 1);
     }
-    
+
     SECTION("storing a multitude of items adds the expected number of matching item") {
         uint elementCount = 50;
         auto seenProcesses = storeNItems(engine, elementCount, 1000, 1010, -20, 20, mockSyscalls, resFreq, pidFreq);
         auto pids = pidRange(1000, 1010);
         auto results = engine.QueryByPids(pids);
- 
+
         CHECK(checkMatches(results, seenProcesses, pids, elementCount));
         CHECK(engine.Size() == elementCount);
 
@@ -198,7 +211,7 @@ TEST_CASE("storage engine can retrieve added items", "[Sqlite3StorageEngine]") {
     mockSyscalls.emplace_back("sys_read");
     mockSyscalls.emplace_back("sys_open");
     mockSyscalls.emplace_back("sys_mmap");
-    
+
     Sqlite3StorageEngine engine;
     CHECK(engine.Initialize(mockSyscalls));
     CHECK(engine.Size() == 0);
@@ -224,10 +237,10 @@ TEST_CASE("storage engine can retrieve added items", "[Sqlite3StorageEngine]") {
 
         CHECK(checkMatches(results, seenProcesses, pids, pidFreq[1000]));
     }
-    
+
     SECTION("Querying with a set of pids returns all items with matching pids") {
-        uint count = pidFreq[1000] + pidFreq[1005] + pidFreq[1006] + pidFreq[1008];        
-        
+        uint count = pidFreq[1000] + pidFreq[1005] + pidFreq[1006] + pidFreq[1008];
+
         auto results = engine.QueryByPids({1000, 1005, 1006, 1008});
 
         CHECK(checkMatches(results, seenProcesses, pids, count));
@@ -266,7 +279,7 @@ TEST_CASE("storage engine can retrieve added items", "[Sqlite3StorageEngine]") {
         for(int res = -20; res <= 20; res++)
         {
             auto results = engine.QueryByResultCodeInTimespan(res);
-            
+
             CHECK(checkMatches(results, seenProcesses, pids, resFreq[res]));
         }
     }
@@ -332,7 +345,7 @@ TEST_CASE("storage engine can store and retrieve items at the same time", "[Sqli
     mockSyscalls.emplace_back("sys_read");
     mockSyscalls.emplace_back("sys_open");
     mockSyscalls.emplace_back("sys_mmap");
-    
+
     Sqlite3StorageEngine engine;
     CHECK(engine.Initialize(mockSyscalls));
     CHECK(engine.Size() == 0);
@@ -342,10 +355,10 @@ TEST_CASE("storage engine can store and retrieve items at the same time", "[Sqli
     std::map<std::string, pid_t> seenProcesses;
 
     uint elementCount = 50;
-    auto pids = pidRange(1000, 1010);   
-    
+    auto pids = pidRange(1000, 1010);
+
     SECTION("Threads can query by pid while a writer fills the storage engine") {
-        
+
         std::vector<std::thread> threads;
 
         threads.push_back(std::thread([&]{
@@ -356,7 +369,7 @@ TEST_CASE("storage engine can store and retrieve items at the same time", "[Sqli
         threads.push_back(std::thread([&]{
             uint matchedTimes = 0;
             std::vector<MockTelemetry> results;
-            while (matchedTimes < 2) 
+            while (matchedTimes < 2)
             {
                 REQUIRE_NOTHROW(results = engine.QueryByPids({}));
                 if (results.size() == elementCount)
@@ -379,7 +392,7 @@ TEST_CASE("storage engine can store and retrieve items at the same time", "[Sqli
         threads.push_back(std::thread([&]{
             uint matchedTimes = 0;
             std::vector<MockTelemetry> results;
-            while (matchedTimes < 2) 
+            while (matchedTimes < 2)
             {
                 uint accumulated = 0;
                 bool allTrue = true;

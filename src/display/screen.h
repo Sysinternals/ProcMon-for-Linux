@@ -1,14 +1,27 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+/*
+    Procmon-for-Linux
+
+    Copyright (c) Microsoft Corporation
+
+    All rights reserved.
+
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ""Software""), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 #ifndef SCREEN_H
 #define SCREEN_H
 
 #include <ncurses.h>
 
-/* 
- * Due to a conflict with ncurses OK macro and ebpf::StatusTuple::OK() 
- * we have to undef OK and define a NCURSES_OK which is equivalent to 
+/*
+ * Due to a conflict with ncurses OK macro and ebpf::StatusTuple::OK()
+ * we have to undef OK and define a NCURSES_OK which is equivalent to
  * ncurses OK.
  */
 #undef OK
@@ -22,6 +35,12 @@
 #include "screen_configuration.h"
 #include "event_formatter.h"
 #include "../configuration/procmon_configuration.h"
+
+// Symbol resolution code
+#include "bcc_elf.h"
+#include "bcc_perf_map.h"
+#include "bcc_proc.h"
+#include "bcc_syms.h"
 
 // default screen dimensions
 #define MINIMUM_HEIGHT  15
@@ -101,7 +120,7 @@ class Screen {
         int currentLine;
         int currentPage;
         int eventRefreshThreshold;
-        
+
         // event variables
         int totalEvents;
 
@@ -135,7 +154,7 @@ class Screen {
         WINDOW* detailWin;
         WINDOW* columnWin;
         WINDOW* statWin;
-        WINDOW* helpWin;        
+        WINDOW* helpWin;
 
         // columns
         Column* timeStampColumn;
@@ -155,11 +174,19 @@ class Screen {
         PANEL* detailPanel;
         PANEL* columnPanel;
         PANEL* statPanel;
-        PANEL* helpPanel;        
+        PANEL* helpPanel;
 
         // screen data
         std::vector<ITelemetry> eventList;
         std::vector<int> idList;
+
+        // Symbol resolution
+        std::unordered_map<int, void*> symEnginePidMap;
+        bcc_symbol_option SymbolOption = {.use_debug_file = 1,
+                                        .check_debug_file_crc = 1,
+                                        .lazy_symbolize = 1,
+                                        .use_symbol_type = (1 << STT_FUNC) | (1 << STT_GNU_IFUNC)};
+
 
         // A list of formatters used to special case the output formatting on a per sys call basis
         // NOTE: The first element in the vector is always our default formatter with a syscall name of "".
@@ -185,12 +212,12 @@ class Screen {
         // Footer View Functions
         void drawFilterPrompt(std::string filter);
         void drawSearchPrompt(std::string search, bool error);
-        
+
         // View Initializers
         void initDetailView();
         void initColumnView();
-        void initStatView();   
-        void initHelpView();           
+        void initStatView();
+        void initHelpView();
 
         // Column Initializers
         void initTimestampColumn();
@@ -254,6 +281,7 @@ class Screen {
 
         std::string DecodeArguments(ITelemetry event);
         int FindSyscall(std::string& syscallName);
+        bool ResolveSymbols(StackTrace* stack, pid_t pid);
 };
 
 #endif // SCREEN_H

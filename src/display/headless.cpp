@@ -1,3 +1,19 @@
+/*
+    Procmon-for-Linux
+
+    Copyright (c) Microsoft Corporation
+
+    All rights reserved.
+
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ""Software""), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 #include "headless.h"
 #include "../logging/easylogging++.h"
 
@@ -20,9 +36,8 @@ bool Headless::initialize(std::shared_ptr<ProcmonConfiguration> configPtr)
 {
     config = configPtr;
 
-    std::cout << "Procmon " << PROCMON_VERSION_MAJOR << "." << PROCMON_VERSION_MINOR << " - (C) 2020 Microsoft Corporation. Licensed under the MIT license." << std::endl;
-    std::cout << "Copyright (C) 2020 Microsoft Corporation. All rights reserved. Licensed under the MIT license." << std::endl;
-    std::cout << "Mark Russinovich, Mario Hewardt, Javid Habibi, John Salem" << std::endl << std::endl;
+    std::cout << "Procmon " << STRFILEVER;
+    std::cout << VER_COPYRIGHT;
 
     std::cout << "Press Ctrl-C to end monitoring without terminating the process." << std::endl << std::endl;
 
@@ -43,7 +58,7 @@ bool Headless::initialize(std::shared_ptr<ProcmonConfiguration> configPtr)
     }
 
     std::cout << "Syscall Filter: ";
-    if(config->events.size() == ::SyscallSchema::Utils::SyscallNameToNumber.size())
+    if(config->events.size() == syscalls.size())
     {
         std::cout << "All Syscalls" << std::endl;
     }
@@ -57,7 +72,7 @@ bool Headless::initialize(std::shared_ptr<ProcmonConfiguration> configPtr)
         }
         std::cout << std::endl;
     }
-    
+
     return true;
 }
 
@@ -70,14 +85,13 @@ void Headless::run()
     signal(SIGINT, sigintHandler);
 
     std::cout << "Events captured: ";
-    
+
     while(running)
     {
         // check to see if user has hit ctrl + c
         if(signalStatus == SIGINT)
         {
             config->GetTracer()->SetRunState(TRACER_SUSPENDED);
-            running = false;
             break;
         }
 
@@ -106,7 +120,7 @@ void Headless::shutdown()
         std::cerr << "Failed to write to tracefile " << config->GetOutputTraceFilePath() << std::endl;
         CLIUtils::FastExit();
     }
-    
+
 
     std::cout << "Total events captured: " << config->GetStorage()->Size() << std::endl;
 

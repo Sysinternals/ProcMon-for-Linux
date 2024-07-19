@@ -1,4 +1,16 @@
 # Azure build pipelines for Procmon-for-Linux
+resources:
+  repositories:
+  - repository: ProcMon
+    type: github
+    endpoint: sysinternals
+    name: sysinternals/ProcMon-for-Linux
+
+  - repository: SysinternalsEBPF
+    type: github
+    endpoint: sysinternals
+    name: sysinternals/SysinternalsEBPF
+
 trigger:
     branches:
       include:
@@ -17,7 +29,10 @@ stages:
     - job: "Build_Procmon"
       pool:
         vmImage: "ubuntu-20.04"
+      timeoutInMinutes: 240
       steps:
+      - checkout: self
+      - checkout: SysinternalsEBPF
       - script: |
           clang --version
           clang++ --version
@@ -26,8 +41,25 @@ stages:
 
       - script: |
           export LLVM_LIBRARY_DIRS=/usr/lib/llvm-6.0/lib
-          chmod +x .container/install-ubuntu-dependencies.sh
-          .container/install-ubuntu-dependencies.sh
+          ls
+          chmod +x ProcMon-for-Linux/.devcontainer/install-ubuntu-dependencies.sh
+          ProcMon-for-Linux/.devcontainer/install-ubuntu-dependencies.sh
         displayName: "Install pre-reqs for Ubuntu"
 
+      - template: templates/build.yaml@SysinternalsEBPF
+        parameters:
+          srcPath: 'SysinternalsEBPF'
+          runStaticAnalysis: false
+          builddir: 'sysinternalsEBPF_build'
+
+      - script: |
+          cd $(Build.SourcesDirectory)/SysinternalsEBPF/sysinternalsEBPF_build
+          sudo make install
+          sudo ldconfig
+        displayName: "Install SysinternalsEBPF"
+
       - template: templates/build.yaml
+        parameters:
+          srcPath: 'ProcMon-for-Linux'
+          runStaticAnalysis: true
+          builddir: 'procmon_build'

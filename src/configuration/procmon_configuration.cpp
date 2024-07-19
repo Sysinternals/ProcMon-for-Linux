@@ -1,7 +1,23 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+/*
+    Procmon-for-Linux
+
+    Copyright (c) Microsoft Corporation
+
+    All rights reserved.
+
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ""Software""), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 #include "procmon_configuration.h"
+
+extern std::string debugTraceFile;
+extern bool debugTrace;
 
 void ProcmonConfiguration::HandlePidArgs(char *pidArgs)
 {
@@ -52,9 +68,18 @@ void ProcmonConfiguration::HandleEventArgs(char *eventArgs)
     }
 }
 
+void ProcmonConfiguration::HandleLogArg(char * filepath)
+{
+    if(filepath)
+    {
+        debugTraceFilePath = std::string(filepath);
+        debugTrace = true;
+    }
+}
+
 void ProcmonConfiguration::HandleFileArg(char * filepath)
 {
-    std::ifstream testFilePath(filepath); 
+    std::ifstream testFilePath(filepath);
     if (!testFilePath)
     {
         std::cerr << "The specified promcon trace file doesn't exist" << std::endl;
@@ -76,7 +101,7 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
         exit(1);
     }
 
-    LOG(INFO) << "Tv_sec " << startTime.tv_sec << " Tv_nsec " << startTime.tv_nsec;
+    LOG(DEBUG) << "Tv_sec " << startTime.tv_sec << " Tv_nsec " << startTime.tv_nsec;
 
     // setup default output trace file
     outputTraceFilePath = "procmon_" + date + "_" + epocStartTime + ".db";
@@ -88,6 +113,7 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
         { "events",        required_argument, NULL, 'e' },
         { "collect",       optional_argument, NULL, 'c' },
         { "file",          required_argument, NULL, 'f' },
+        { "log",           required_argument, NULL, 'l' },
         { "help",          no_argument,       NULL, 'h' },
         { NULL,            0,                 NULL,  0  }
     };
@@ -96,9 +122,9 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
     int option_index = 0;
     while (true)
     {
-        if ((c = getopt_long(argc, argv, "hc:p:s:e:f:", long_options, &option_index)) == -1)
+        if ((c = getopt_long(argc, argv, "hc:p:s:e:f:l:", long_options, &option_index)) == -1)
             break;
-        
+
         switch (c)
         {
             case 0:
@@ -132,23 +158,27 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
                 HandleFileArg(optarg);
                 break;
 
+            case 'l':
+                HandleLogArg(optarg);
+                break;
+
             default:
                 // Invalid argument
                 CLIUtils::DisplayUsage(true);
         }
     }
 
-    LOG(INFO) << "Output trace file:" << outputTraceFilePath;
+    LOG(DEBUG) << "Output trace file:" << outputTraceFilePath;
 
     // Get schema of all syscalls on system
-    syscallSchema = ::SyscallSchema::Utils::CollectSyscallSchema();
+    syscallSchema = Utils::CollectSyscallSchema();
 
     // if user has not specified any syscalls trace all events
     if(events.size() == 0)
     {
-        for (auto i : ::SyscallSchema::Utils::SyscallNameToNumber)
+        for (auto i : syscalls)
         {
-            events.push_back({i.first});
+            events.push_back({i.name});
         }
     }
     else
@@ -156,7 +186,7 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
         for (auto event : events)
         {
             auto search = std::find_if(syscallSchema.begin(), syscallSchema.end(), [event](auto s) -> bool {return event.Name().compare(s.syscallName) == 0; });
-        
+
             if (search == syscallSchema.end())
             {
                 // Invalid syscall passed to procmon
@@ -177,12 +207,15 @@ ProcmonConfiguration::ProcmonConfiguration(int argc, char *argv[])
     _storageEngine->Initialize(events);
 
     // Initialize Tracer
-    _tracerEngine = std::unique_ptr<ITracerEngine>(new EbpfTracerEngine(_storageEngine, events));
+    _tracerEngine = std::unique_ptr<ITracerEngine>(new EbpfTracerEngine(_storageEngine, events, pids));
+    _tracerEngine->Initialize();
     _tracerEngine->AddEvent(events);
-    _tracerEngine->AddPids(pids);
 
     // List of all syscalls that contain pointer params
-    pointerSyscalls = ::SyscallSchema::Utils::Linux64PointerSycalls;
+    pointerSyscalls = Utils::Linux64PointerSycalls;
+
+    // Set initial state to running
+    _tracerEngine->SetRunState(TRACER_RUNNING);
 }
 
 uint64_t ProcmonConfiguration::GetStartTime()
@@ -209,6 +242,6 @@ std::string ProcmonConfiguration::ConvertEpocTime(time_t time)
 
     // prep timestamp
     strftime(_buf, DEFAULT_TIMESTAMP_LENGTH, "%T", _time);
-    
+
     return std::string(_buf);
 }

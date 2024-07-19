@@ -1,5 +1,18 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+/*
+    Procmon-for-Linux
+
+    Copyright (c) Microsoft Corporation
+
+    All rights reserved.
+
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ""Software""), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 #include "screen.h"
 #include "event_formatter.h"
@@ -75,7 +88,7 @@ void Screen::initScreen(std::shared_ptr<ProcmonConfiguration> config)
     searchCount = 0;
     filter = "";
 
-    LOG(INFO) << "ScreenH:" << screenH << "ScreenW:" << screenW << "Column Height:" << columnHeight;
+    LOG(DEBUG) << "ScreenH:" << screenH << "ScreenW:" << screenW << "Column Height:" << columnHeight;
 
     // start initializing UI components
     initHeader();
@@ -109,9 +122,9 @@ void Screen::run()
     int nonRefreshCount = 0;
     int64_t duration = 0;
 
-    LOG(INFO) << "Starting main UI thread";
-    LOG(INFO) << "Event Threshold:" << eventRefreshThreshold;
-    LOG(INFO) << "Tracing Events:" << config->events.size();
+    LOG(DEBUG) << "Starting main UI thread";
+    LOG(DEBUG) << "Event Threshold:" << eventRefreshThreshold;
+    LOG(DEBUG) << "Tracing Events:" << config->events.size();
 
     // check to see if we are loading a trace file
     if(config->GetTraceFilePath().compare("") != 0)
@@ -175,8 +188,6 @@ void Screen::run()
 
                     // update footer
                     drawFilterPrompt(filter);
-
-                    prevInput = input;
                 }
                 else
                 {
@@ -250,8 +261,6 @@ void Screen::run()
 
                     // update footer
                     drawSearchPrompt(filter, false);
-
-                    prevInput = input;
                 }
                 else
                 {
@@ -300,7 +309,7 @@ void Screen::run()
                         case KEY_F(3):
                             searchCount++;
                             displaySearchEvents(idList, searchCount);
-                            LOG(INFO) << "idList Size: " << idList.size() << " searchCount: " << searchCount;
+                            LOG(DEBUG) << "idList Size: " << idList.size() << " searchCount: " << searchCount;
                             break;
 
                         case KEY_F(9):
@@ -334,7 +343,7 @@ void Screen::run()
                 {
                     // query datastore for matching event ids and move to line
                     idList = storageEngine->QueryIdsBySearch(filter, config->pids, screenConfig.getColumnSort(), screenConfig.getColumnAscending(), config->events);
-                    LOG(INFO) << "Search returned" << idList.size() << "results";
+                    LOG(DEBUG) << "Search returned" << idList.size() << "results";
 
                     // display search event
                     displaySearchEvents(idList, searchCount);
@@ -506,7 +515,7 @@ void Screen::run()
 
                 default:
                     if (input != ERR)
-                        LOG(INFO) << "Not in switch statement" << input;
+                        LOG(DEBUG) << "Not in switch statement" << input;
             }
         }
 
@@ -525,7 +534,7 @@ void Screen::run()
                 auto newEventList = storageEngine->QueryByEventsinPage(config->pids, getCurrentPage(), getTotalLines(), screenConfig.getColumnSort(), screenConfig.getColumnAscending(), config->events);
                 int i = 0;
 
-                LOG(INFO) << "New Eventlist Size" << newEventList.size();
+                LOG(DEBUG) << "New Eventlist Size" << newEventList.size();
 
                 if(newEventList.size() > eventList.size())
                 {
@@ -640,7 +649,7 @@ void Screen::drawHeader()
     wmove(headerWin, 0, 0);
 
     // write header to screen
-    wprintw(headerWin, ">>> ProcessMonitor (preview) <<<");
+    wprintw(headerWin, ">>> ProcessMonitor (%s) <<<", STRFILEVER);
 
     // enable fkeys on header window
     keypad(headerWin, true);
@@ -1064,7 +1073,7 @@ EventFormatter* Screen::GetFormatter(ITelemetry lineData)
 int Screen::FindSyscall(std::string& syscallName)
 {
     ProcmonConfiguration* config = configPtr.get();
-    std::vector<struct SyscallSchema::SyscallSchema>& schema = config->GetSchema();
+    std::vector<struct SyscallSchema>& schema = config->GetSchema();
 
     int i=0;
     for(auto& syscall : schema)
@@ -1162,7 +1171,7 @@ void Screen::resize()
     // check to see if current highlight line is now off the screen
     if(totalLines < currentLine) currentLine = totalLines;
 
-    LOG(INFO) << "Resize detected! ScreenH:" << screenH << "ScreenW:" << screenW << "Column Height:" << columnHeight;
+    LOG(DEBUG) << "Resize detected! ScreenH:" << screenH << "ScreenW:" << screenW << "Column Height:" << columnHeight;
 
     // resize header & footer
     resizeHeader();
@@ -1304,7 +1313,7 @@ void Screen::displaySearchEvents(std::vector<int> idList, int searchCount)
             currentLine = getTotalLines();
         }
 
-        LOG(INFO) << "targetPage: " << targetPage << " currentLine: " << currentLine << " id: " << id << "TotalLines" << getTotalLines();
+        LOG(DEBUG) << "targetPage: " << targetPage << " currentLine: " << currentLine << " id: " << id << "TotalLines" << getTotalLines();
 
         // check if we actually need to query datastore or if its on the same page
         if(targetPage != currentPage)
@@ -1434,7 +1443,7 @@ void Screen::showHelpView()
     panel_above(helpPanel);
 
     // print header
-    windowPrintFill(helpWin, COLUMN_HEADER_COLOR, 1, y, "%s %d.%d %s", "Procmon",  PROCMON_VERSION_MAJOR, PROCMON_VERSION_MINOR, "- (C) 2020 Microsoft Corporation. Licensed under the MIT license.");
+    windowPrintFill(helpWin, COLUMN_HEADER_COLOR, 1, y, "%s %s", "Sysinternals - Procmon",  STRFILEVER);
     y+=2;
 
     // print column labels
@@ -1539,12 +1548,15 @@ void Screen::showDetailView()
     // grab stack trace for current event
     eventTrace = &event->stackTrace;
 
-
-    mvwprintw(detailWin, y++, 2, "Stack Trace:");
-    // add stack trace to window
-    for(int i = 0; i < eventTrace->userIPs.size() && y < detailViewHeight - 1; i++)
+    // Resolve symbols
+    if(ResolveSymbols(eventTrace, event->pid))
     {
-        mvwprintw(detailWin, y++, 4, "0x%-8X %s", eventTrace->userIPs[i], eventTrace->userSymbols[i].c_str());
+        mvwprintw(detailWin, y++, 2, "Stack Trace:");
+        // add stack trace to window
+        for(int i = 0; i < eventTrace->userIPs.size() && y < detailViewHeight - 1; i++)
+        {
+            mvwprintw(detailWin, y++, 4, "0x%-8X %s", eventTrace->userIPs[i], eventTrace->userSymbols[i].c_str());
+        }
     }
 
     // draw border
@@ -1554,6 +1566,52 @@ void Screen::showDetailView()
     refreshScreen();
 }
 
+// ----------------------------------------------------------------------------
+// ResolveSymbols
+// ----------------------------------------------------------------------------
+bool Screen::ResolveSymbols(StackTrace* stack, pid_t pid)
+{
+    void* symResolver = NULL;
+
+    if (symEnginePidMap.find(pid) == symEnginePidMap.end())
+    {
+        symResolver = bcc_symcache_new(pid, &SymbolOption);
+        symEnginePidMap[pid] = symResolver;
+
+    }
+    else
+    {
+        symResolver = symEnginePidMap[pid];
+    }
+
+    bcc_symbol symbol;
+    for (int i = 0; i < stack->userIPs.size(); i++)
+    {
+        int ret = bcc_symcache_resolve(symResolver, stack->userIPs[i], &symbol);
+
+        if (ret != 0)
+        {
+            if (symbol.module != NULL)
+            {
+                std::stringstream ss;
+                ss << symbol.module << "![UNKNOWN]";
+                stack->userSymbols.push_back(ss.str());
+            }
+            else
+            {
+                stack->userSymbols.push_back("[UNKNOWN]");
+            }
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << symbol.module << "!" << symbol.demangle_name;
+            stack->userSymbols.push_back(ss.str());
+        }
+    }
+
+    return true;
+}
 
 void Screen::closeDetailView()
 {
@@ -1715,7 +1773,7 @@ void Screen::handleMouseEvent(MEVENT* event)
             break;
 
         default:
-            LOG(INFO) << "Unknown mouse click";
+            LOG(DEBUG) << "Unknown mouse click";
             break;
     }
 }

@@ -1,5 +1,18 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT license.
+/*
+    Procmon-for-Linux
+
+    Copyright (c) Microsoft Corporation
+
+    All rights reserved.
+
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ""Software""), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 #include <algorithm>
 #include <functional>
@@ -51,19 +64,19 @@
                                     "%' OR duration LIKE '%" + target + \
                                     "%' OR resultcode LIKE '%" + target + "%'"
 #define SQL_BETWEEN_TIME            "timestamp BETWEEN "
-#define SQL_PAGINATE(offset, limit) " LIMIT " + std::to_string(limit) + " OFFSET " + std::to_string(offset)                
+#define SQL_PAGINATE(offset, limit) " LIMIT " + std::to_string(limit) + " OFFSET " + std::to_string(offset)
 #define SQL_INSERT                  "INSERT INTO ebpf (pid, stacktrace, comm, processname, resultcode, timestamp, syscall, duration, arguments) \
                                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
 #define SQL_TX_START                "BEGIN TRANSACTION"
 #define SQL_TX_END                  "END TRANSACTION"
 #define SQL_TX_ROLLBACK             "ROLLBACK TRANSACTION"
-#define SQL_AND                     " AND "  
+#define SQL_AND                     " AND "
 #define SQL_ORDER                   " ORDER BY "
 #define SQL_ASCENDING               " ASC "
 #define SQL_DESCENDING              " DESC "
-#define SQL_END                     ";"   
+#define SQL_END                     ";"
 
-Sqlite3StorageEngine::~Sqlite3StorageEngine() 
+Sqlite3StorageEngine::~Sqlite3StorageEngine()
 {
     telemetryCount = 0;
     ready = false;
@@ -77,8 +90,8 @@ Sqlite3StorageEngine::~Sqlite3StorageEngine()
  *  The database connection isn't open and ready flag set to false.
  *
  * Post:
- *  Assuming the storage engine hasn't been initialized already, opens a 
- *  Sqlite3 database connection for all data elements and set the ready 
+ *  Assuming the storage engine hasn't been initialized already, opens a
+ *  Sqlite3 database connection for all data elements and set the ready
  *  flag to true.
  */
 bool Sqlite3StorageEngine::Initialize(const std::vector<Event>& syscalls)
@@ -119,14 +132,14 @@ bool Sqlite3StorageEngine::Initialize(const std::vector<Event>& syscalls)
  * Internal helper method that parses a prepared SQL statement immediately after a sql
  * statement step call. This is done column by column and the extracted values are used
  * to construct a ITelemetry data element and returned.
- * 
+ *
  * Pre:
- *  The given SQL statement a valid SQL SELECT statement, is prepared and associated to 
+ *  The given SQL statement a valid SQL SELECT statement, is prepared and associated to
  *  an open database connection.
- * 
+ *
  * Post:
  *  Being only a retrieval, database should not be changed.
- * 
+ *
  */
 ITelemetry Sqlite3StorageEngine::parseSqlite3Row(sqlite3_stmt *preppedSqlStmt)
 {
@@ -147,14 +160,14 @@ ITelemetry Sqlite3StorageEngine::parseSqlite3Row(sqlite3_stmt *preppedSqlStmt)
     for (int i = 0; i < columnCount; i++)
     {
         std::string columnName (sqlite3_column_name(preppedSqlStmt, i));
-        if (columnName == "pid") 
+        if (columnName == "pid")
         {
             datam.pid = sqlite3_column_int(preppedSqlStmt, i);
         }
         else if (columnName == "stacktrace")
         {
             // Add a way to capture stacktrace via a deserialize function.
-            const char* stack = reinterpret_cast<const char*>(sqlite3_column_text(preppedSqlStmt, i));            
+            const char* stack = reinterpret_cast<const char*>(sqlite3_column_text(preppedSqlStmt, i));
             if (stack == NULL)
                 continue;
             datam.stackTrace.Inflate(std::string(stack));
@@ -187,18 +200,18 @@ ITelemetry Sqlite3StorageEngine::parseSqlite3Row(sqlite3_stmt *preppedSqlStmt)
         else if (columnName == "duration")
         {
             datam.duration = sqlite3_column_int64(preppedSqlStmt, i);
-        }        
+        }
         else if (columnName == "arguments")
         {
-            const unsigned char* arguments = reinterpret_cast<const unsigned char*>(sqlite3_column_blob(preppedSqlStmt, i));            
+            const unsigned char* arguments = reinterpret_cast<const unsigned char*>(sqlite3_column_blob(preppedSqlStmt, i));
             if (arguments == NULL)
                 continue;
 
-            // Interestingly enough, if we don't copy the blob we get back from sqlite it can eventually 
-            // reuse that memory buffer and change the contents of the record. 
+            // Interestingly enough, if we don't copy the blob we get back from sqlite it can eventually
+            // reuse that memory buffer and change the contents of the record.
             datam.arguments = (unsigned char*) malloc(MAX_BUFFER);
             memcpy(datam.arguments, arguments, MAX_BUFFER);
-        }   
+        }
         else if (columnName == "timestamp")
         {
             datam.timestamp = sqlite3_column_int64(preppedSqlStmt, i);
@@ -209,23 +222,23 @@ ITelemetry Sqlite3StorageEngine::parseSqlite3Row(sqlite3_stmt *preppedSqlStmt)
 }
 
 /**
- * Internal helper method that retrieves data from the Sqlite3 database by going through the 
- * results step by step. This method relies on Sqlite3's locking mechanisms to deal with cases 
- * where reads are happening at the same time that writes are happening. 
+ * Internal helper method that retrieves data from the Sqlite3 database by going through the
+ * results step by step. This method relies on Sqlite3's locking mechanisms to deal with cases
+ * where reads are happening at the same time that writes are happening.
  * Reads should not block other reads.
- * 
+ *
  * Pre:
- *  The given SQL statement a valid SQL SELECT statement, is prepared and associated to 
+ *  The given SQL statement a valid SQL SELECT statement, is prepared and associated to
  *  an open database connection.
- * 
+ *
  * Post:
  *  Being only a retrieval, database should not be changed.
- * 
+ *
  */
 std::vector<ITelemetry> Sqlite3StorageEngine::getFromSqlite3(sqlite3_stmt* preppedSqlStmt)
 {
     std::vector<ITelemetry> results;
-    
+
     auto rc = sqlite3_step(preppedSqlStmt);
     while (rc != SQLITE_DONE)
     {
@@ -239,7 +252,7 @@ std::vector<ITelemetry> Sqlite3StorageEngine::getFromSqlite3(sqlite3_stmt* prepp
                 rc = sqlite3_step(preppedSqlStmt);
                 break;
             }
-            
+
             case SQLITE_ERROR:
             {
                 throw std::runtime_error{"Sqlite3 error encountered."};
@@ -251,14 +264,14 @@ std::vector<ITelemetry> Sqlite3StorageEngine::getFromSqlite3(sqlite3_stmt* prepp
                 continue;
             }
         }
-    }  
+    }
     return results;
 }
 
 std::vector<int> Sqlite3StorageEngine::getIdsFromSqlite3(sqlite3_stmt* preppedSqlStmt)
 {
     std::vector<int> results;
-    
+
     auto rc = sqlite3_step(preppedSqlStmt);
     while (rc != SQLITE_DONE)
     {
@@ -272,7 +285,7 @@ std::vector<int> Sqlite3StorageEngine::getIdsFromSqlite3(sqlite3_stmt* preppedSq
                 rc = sqlite3_step(preppedSqlStmt);
                 break;
             }
-            
+
             case SQLITE_ERROR:
             {
                 throw std::runtime_error{"Sqlite3 error encountered retrieving row ids."};
@@ -284,42 +297,42 @@ std::vector<int> Sqlite3StorageEngine::getIdsFromSqlite3(sqlite3_stmt* preppedSq
                 continue;
             }
         }
-    }  
+    }
     return results;
 }
 
 /**
  * Internal helper method that prepares a SELECT SQL statement for database associated to the given syscall,
  * invokes the statement and then appends the resulting ITelemetry elements to given result vector.
- * 
+ *
  * Pre:
- *  The database connection associated to the given syscall should already be open. 
- * 
+ *  The database connection associated to the given syscall should already be open.
+ *
  * Post:
  *  Being only a retrieval, database should not be changed.
- * 
+ *
  */
-// void Sqlite3StorageEngine::prepareAndGetFromSqlite3(std::vector<pid_t> pids, const std::vector<Event>& syscalls, std::vector<ITelemetry>& results) 
-void Sqlite3StorageEngine::prepareAndGetFromSqlite3(const std::string raw_sql_statement, std::vector<ITelemetry>& results) 
+// void Sqlite3StorageEngine::prepareAndGetFromSqlite3(std::vector<pid_t> pids, const std::vector<Event>& syscalls, std::vector<ITelemetry>& results)
+void Sqlite3StorageEngine::prepareAndGetFromSqlite3(const std::string raw_sql_statement, std::vector<ITelemetry>& results)
 {
     sqlite3_stmt* stmt;
     auto rc = sqlite3_prepare_v2(dbConnection, raw_sql_statement.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK)
     {
         sqlite3_finalize(stmt);
-        throw std::runtime_error{"Sqlite3 error encountered."};    
+        throw std::runtime_error{"Sqlite3 error encountered."};
     }
-    
+
     try {
         auto temp = getFromSqlite3(stmt);
-        
+
         // Move elements to result vector.
         results.insert(
             results.end(),
             std::make_move_iterator(temp.begin()),
             std::make_move_iterator(temp.end())
         );
-    } 
+    }
     catch (const std::runtime_error& e) {
         sqlite3_finalize(stmt);
         throw e;
@@ -327,26 +340,26 @@ void Sqlite3StorageEngine::prepareAndGetFromSqlite3(const std::string raw_sql_st
     sqlite3_finalize(stmt);
 }
 
-void Sqlite3StorageEngine::prepareAndGetIdsFromSqlite3(const std::string raw_sql_statement, std::vector<int>& results) 
+void Sqlite3StorageEngine::prepareAndGetIdsFromSqlite3(const std::string raw_sql_statement, std::vector<int>& results)
 {
     sqlite3_stmt* stmt;
     auto rc = sqlite3_prepare_v2(dbConnection, raw_sql_statement.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK)
     {
         sqlite3_finalize(stmt);
-        throw std::runtime_error{"Sqlite3 error encountered in prepareAndGetIds."};    
+        throw std::runtime_error{"Sqlite3 error encountered in prepareAndGetIds."};
     }
-    
+
     try {
         auto temp = getIdsFromSqlite3(stmt);
-        
+
         // Move elements to result vector.
         results.insert(
             results.end(),
             std::make_move_iterator(temp.begin()),
             std::make_move_iterator(temp.end())
         );
-    } 
+    }
     catch (const std::runtime_error& e) {
         sqlite3_finalize(stmt);
         throw e;
@@ -355,10 +368,10 @@ void Sqlite3StorageEngine::prepareAndGetIdsFromSqlite3(const std::string raw_sql
 }
 
 std::string Sqlite3StorageEngine::addPidFilterToSQLQuery(const std::string initialQuery, std::vector<pid_t> pids, const bool first)
-{    
+{
     std::string resultingQuery = initialQuery;
 
-    if (pids.size() > 0) 
+    if (pids.size() > 0)
     {
         if (!first)
             resultingQuery += SQL_AND;
@@ -379,7 +392,7 @@ std::string Sqlite3StorageEngine::addPidFilterToSQLQuery(const std::string initi
         resultingQuery += SQL_CONTAIN_END;
     }
 
-    return resultingQuery;   
+    return resultingQuery;
 }
 
 
@@ -396,7 +409,7 @@ std::string Sqlite3StorageEngine::addSyscallFilterToSQLQuery(const std::string i
             resultingQuery += SQL_AND;
         else
             resultingQuery += SQL_WHERE;
-        
+
         resultingQuery += SQL_NOT_CONTAIN_SYSCALL;
 
         std::string delimitedSyscalls;
@@ -445,11 +458,11 @@ std::vector<ITelemetry> Sqlite3StorageEngine::QueryByPid(pid_t pid, const std::v
 
     std::vector<ITelemetry> results;
     prepareAndGetFromSqlite3(raw_sql_statement, results);
-    
+
     return results;
 }
 
-std::vector<ITelemetry> Sqlite3StorageEngine::QueryByPids(std::vector<pid_t> pids, 
+std::vector<ITelemetry> Sqlite3StorageEngine::QueryByPids(std::vector<pid_t> pids,
     const std::vector<Event>& syscalls)
 {
     if(!ready)
@@ -458,7 +471,7 @@ std::vector<ITelemetry> Sqlite3StorageEngine::QueryByPids(std::vector<pid_t> pid
     std::string raw_sql_statement;
 
     raw_sql_statement = addPidFilterToSQLQuery(SQL_SELECT, pids, true);
-    
+
     auto first = true;
     if (pids.size() > 0)
         first = false;
@@ -466,7 +479,7 @@ std::vector<ITelemetry> Sqlite3StorageEngine::QueryByPids(std::vector<pid_t> pid
     raw_sql_statement = addSyscallFilterToSQLQuery(raw_sql_statement, syscalls, first);
     raw_sql_statement += SQL_END;
 
-    std::vector<ITelemetry> results;    
+    std::vector<ITelemetry> results;
     prepareAndGetFromSqlite3(raw_sql_statement, results);
 
     return results;
@@ -492,12 +505,12 @@ std::vector<ITelemetry> Sqlite3StorageEngine::QueryByPidInTimespan(
         raw_sql_statement += SQL_AND;
         raw_sql_statement += std::to_string(end_time);
     }
-    
+
     raw_sql_statement += SQL_END;
 
     std::vector<ITelemetry> results;
     prepareAndGetFromSqlite3(raw_sql_statement, results);
-    
+
     return results;
 }
 
@@ -528,7 +541,7 @@ std::vector<ITelemetry> Sqlite3StorageEngine::QueryByPidsInTimespan(
 
     raw_sql_statement += SQL_END;
 
-    std::vector<ITelemetry> results;    
+    std::vector<ITelemetry> results;
     prepareAndGetFromSqlite3(raw_sql_statement, results);
 
     return results;
@@ -563,20 +576,20 @@ std::vector<ITelemetry> Sqlite3StorageEngine::QueryByResultCodeInTimespan(
 
     std::vector<ITelemetry> results;
     prepareAndGetFromSqlite3(raw_sql_statement, results);
-    
+
     return results;
 }
 
 /**
  * Primary querying function utilized by the UI to support column sorting both in
  * ascending and descending order.
- * 
+ *
  * Pre:
- *  The database connection associated to the given syscall should already be open. 
- * 
+ *  The database connection associated to the given syscall should already be open.
+ *
  * Post:
  *  Being only a retrieval, database should not be changed.
- * 
+ *
  */
 std::vector<ITelemetry> Sqlite3StorageEngine::QueryByEventsinPage(
     std::vector<pid_t> pids, uint pageNumber, uint eventsPerPage, ScreenConfiguration::sort orderBy, bool asc, const std::vector<Event>& syscalls)
@@ -626,7 +639,7 @@ std::vector<ITelemetry> Sqlite3StorageEngine::QueryByEventsinPage(
             raw_sql_statement += "duration";
             raw_sql_statement += (asc) ? SQL_ASCENDING : SQL_DESCENDING;
             raw_sql_statement += ", timestamp ASC";
-            break;            
+            break;
     }
 
     uint offset = pageNumber * eventsPerPage;
@@ -695,7 +708,7 @@ std::vector<ITelemetry> Sqlite3StorageEngine::QueryByFilteredEventsinPage(
             raw_sql_statement += "duration";
             raw_sql_statement += (asc) ? SQL_ASCENDING : SQL_DESCENDING;
             raw_sql_statement += ", timestamp ASC";
-            break;            
+            break;
     }
 
     uint offset = pageNumber * eventsPerPage;
@@ -746,7 +759,7 @@ std::vector<int> Sqlite3StorageEngine::QueryIdsBySearch(
         case ScreenConfiguration::duration:
             raw_select_sql_statement += (asc) ? SQL_SELECT_ROWNUM(std::string("duration"), SQL_ASCENDING) : SQL_SELECT_ROWNUM(std::string("duration"), SQL_DESCENDING);
             raw_select_sql_statement += ", timestamp ASC";
-            break;            
+            break;
     }
 
     raw_select_sql_statement += SQL_SELECT_ROWNUM_END;
@@ -777,15 +790,15 @@ std::vector<int> Sqlite3StorageEngine::QueryIdsBySearch(
 
 /**
  * Implements interface method to store a single ITelemetry data entry. This method
- * should not be written to by more than one thread. If there is more than one writer 
+ * should not be written to by more than one thread. If there is more than one writer
  * Sqlite3's internal lock(s) will cause the latter write to fail.
- * 
+ *
  * Pre:
  *  The database connection is open and the storage engine is ready.
- * 
+ *
  * Post:
  *  The database should contain one new entry if all constraints are met.
- * 
+ *
  */
 bool Sqlite3StorageEngine::Store(ITelemetry data)
 {
@@ -808,11 +821,11 @@ bool Sqlite3StorageEngine::Store(ITelemetry data)
     // store syscall event in database
     sqlite3_stmt* stmt;
     auto rc = sqlite3_prepare_v2(dbConnection, SQL_INSERT SQL_END, -1, &stmt, nullptr);
-    
+
     rc = rc & sqlite3_bind_int(stmt, 1, data.pid);
 
     auto serializedData = data.stackTrace.Serialize();
-    
+
     rc = rc & sqlite3_bind_text(stmt, 2, serializedData.c_str(), serializedData.size()+1, nullptr);
 
     rc = rc & sqlite3_bind_text(stmt, 3, data.comm.c_str(), data.comm.size()+1, nullptr);
@@ -854,24 +867,24 @@ bool Sqlite3StorageEngine::Store(ITelemetry data)
  * If any to be added element doesnt meet the constraint, the full operation will terminate
  * with no elements having been added. This achieved by performing all writes within a single
  * SQL transaction, and by rolling back the transaction if a constraint is not met.
- * 
+ *
  * Pre:
  *  The database connection is open and the storage engine is ready.
- * 
+ *
  * Post:
  *  The database should contain data.size() new entry if all constraints are met.
- * 
+ *
  */
 bool Sqlite3StorageEngine::StoreMany(std::vector<ITelemetry> data)
 {
     if(!ready || data.size() < 1)
         return false;
-    
+
     sqlite3_exec(dbConnection, SQL_TX_START, NULL, NULL, nullptr);
 
     for (ITelemetry& datam: data)
-    {            
-        if (!Store(datam)) 
+    {
+        if (!Store(datam))
         {
             sqlite3_exec(dbConnection, SQL_TX_ROLLBACK, NULL, NULL, nullptr);
             return false;
@@ -900,7 +913,7 @@ bool Sqlite3StorageEngine::Clear()
     telemetryCount = 0;
 
     ret = (rc != SQLITE_OK) ? false : true;
-    
+
     return ret;
 }
 
@@ -908,7 +921,7 @@ int Sqlite3StorageEngine::Size()
 {
     if(!ready)
         throw std::runtime_error("Storage engine must be initialized first.");
-    
+
     return telemetryCount;
 }
 
@@ -916,9 +929,9 @@ bool Sqlite3StorageEngine::Export(std::tuple<uint64_t, std::string> startTime, s
 {
     bool ret = false;
     int rc = 0;
-    sqlite3* pFile;           
-    sqlite3_backup* pBackup;  
-    sqlite3* pTo;             
+    sqlite3* pFile;
+    sqlite3_backup* pBackup;
+    sqlite3* pTo;
     sqlite3* pFrom;
 
     // metadata
@@ -928,10 +941,10 @@ bool Sqlite3StorageEngine::Export(std::tuple<uint64_t, std::string> startTime, s
     // store startime of trace in metadata table
     sqlite3_stmt* stmt;
     rc = sqlite3_prepare_v2(dbConnection, SQL_INSERT_METADATA SQL_END, -1, &stmt, nullptr);
-    
+
     rc = rc & sqlite3_bind_int64(stmt, 1, clockStart);
     rc = rc & sqlite3_bind_text(stmt, 2, epocTime.c_str(), epocTime.size()+1, nullptr);
-    
+
     if (rc != SQLITE_OK)
     {
         sqlite3_finalize(stmt);
@@ -946,7 +959,7 @@ bool Sqlite3StorageEngine::Export(std::tuple<uint64_t, std::string> startTime, s
 
     // store stats of trace in stats table
     typedef std::function<bool(std::pair<std::string, std::tuple<int, uint64_t>>, std::pair<std::string, std::tuple<int, uint64_t>>)> Comparator;
- 
+
 	Comparator compFunctor =
 			[](std::pair<std::string, std::tuple<int, uint64_t>> elem1 ,std::pair<std::string, std::tuple<int, uint64_t>> elem2)
 			{
@@ -981,7 +994,7 @@ bool Sqlite3StorageEngine::Export(std::tuple<uint64_t, std::string> startTime, s
 
 
     rc = sqlite3_open(filePath.c_str(), &pFile);
-    if (rc == SQLITE_OK) 
+    if (rc == SQLITE_OK)
     {
         pBackup = sqlite3_backup_init(pFile, "main", dbConnection, "main");
         if (pBackup) {
@@ -994,10 +1007,10 @@ bool Sqlite3StorageEngine::Export(std::tuple<uint64_t, std::string> startTime, s
     {
         throw std::runtime_error("Failed to open tracefile " + filePath);
     }
-    
+
 
     sqlite3_close(pFile);
-    
+
     return ret;
 }
 
@@ -1104,7 +1117,7 @@ std::tuple<uint64_t, std::string> Sqlite3StorageEngine::Load(std::string filepat
         return std::make_tuple(startTimeTicks, startTimeEpoc);
     }
     else
-    {   
+    {
         // return empty tuple on error
         return std::make_tuple(0, "");
     }
