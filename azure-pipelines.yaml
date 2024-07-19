@@ -42,8 +42,8 @@ stages:
       - script: |
           export LLVM_LIBRARY_DIRS=/usr/lib/llvm-6.0/lib
           ls
-          chmod +x Procmon-for-Linux/.devcontainer/install-ubuntu-dependencies.sh
-          Procmon-for-Linux/.devcontainer/install-ubuntu-dependencies.sh
+          chmod +x ProcMon-for-Linux/.devcontainer/install-ubuntu-dependencies.sh
+          ProcMon-for-Linux/.devcontainer/install-ubuntu-dependencies.sh
         displayName: "Install pre-reqs for Ubuntu"
 
       - template: templates/build.yaml@SysinternalsEBPF
