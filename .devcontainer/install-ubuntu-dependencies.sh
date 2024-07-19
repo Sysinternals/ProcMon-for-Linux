@@ -33,6 +33,8 @@ sudo apt upgrade -y \
         gettext \
         libbpf-dev
 
+sudo wget https://raw.githubusercontent.com/torvalds/linux/master/include/uapi/linux/openat2.h -O /usr/include/linux/openat2.h
+
 # install debbuild
 wget https://github.com/debbuild/debbuild/releases/download/19.5.0/debbuild_19.5.0-ascherer.ubuntu18.04_all.deb \
     && sudo dpkg -i debbuild_19.5.0-ascherer.ubuntu18.04_all.deb
