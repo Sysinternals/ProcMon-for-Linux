@@ -38,6 +38,7 @@ stages:
 
       - script: |
           export LLVM_LIBRARY_DIRS=/usr/lib/llvm-6.0/lib
+          ls
           chmod +x ProcMon-for-Linux/.devcontainer/install-ubuntu-dependencies.sh
           ProcMon-for-Linux/.devcontainer/install-ubuntu-dependencies.sh
         displayName: "Install pre-reqs for Ubuntu"
