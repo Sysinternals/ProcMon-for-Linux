@@ -2,16 +2,26 @@ parameters:
 - name: srcPath
   type: string
   default: '.'
+- name: runStaticAnalysis
+  type: boolean
+  default: False
 - name: builddir
   type: string
-  default: 'procmon_build'
+  default: 'build'
 
 steps:
 - script: |
-   export LLVM_DIR=/usr/lib/llvm-6.0/lib/cmake/llvm
-   export REVISION=$(Build.BuildId)
-   sed -i "s/999999/$REVISION/g" ${{ parameters.srcPath }}/CMakeLists.txt
-   mkdir -p ${{ parameters.srcPath }}/${{ parameters.builddir }} && cd ${{ parameters.srcPath }}/${{ parameters.builddir }}
-   cmake ..
-   make
+    mkdir -p ${{ parameters.srcPath }}/${{ parameters.builddir }} && cd ${{ parameters.srcPath }}/${{ parameters.builddir }}
+    cmake ..
+    make
   displayName: "Build Procmon binaries"
+
+- script: |
+    if [ ${{ parameters.runStaticAnalysis }} == True ]; then
+      rm -rf ${{ parameters.srcPath }}/${{ parameters.builddir }} && mkdir -p ${{ parameters.srcPath }}/${{ parameters.builddir }} && cd ${{ parameters.srcPath }}/${{ parameters.builddir }}
+      scan-build cmake ..
+      scan-build -v --status-bugs -o verifier_result --exclude ../test --exclude openssl -disable-checker cplusplus.NewDelete,cplusplus.NewDeleteLeaks make
+    else
+      echo "Skipping static code analysis."
+    fi
+  displayName: "Static analysis of Procmon source code"
