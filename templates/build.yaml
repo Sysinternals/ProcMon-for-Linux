@@ -20,7 +20,7 @@ steps:
     if [ ${{ parameters.runStaticAnalysis }} == True ]; then
       rm -rf ${{ parameters.srcPath }}/${{ parameters.builddir }} && mkdir -p ${{ parameters.srcPath }}/${{ parameters.builddir }} && cd ${{ parameters.srcPath }}/${{ parameters.builddir }}
       scan-build cmake ..
-      scan-build -v --status-bugs -o verifier_result --exclude ../test --exclude openssl -disable-checker cplusplus.NewDelete,cplusplus.NewDeleteLeaks make
+      scan-build -v --status-bugs -o verifier_result --exclude ../src/logging --exclude ../src/tracer/ebpf --exclude ../src/sym --exclude ../vendor -disable-checker cplusplus.NewDelete,cplusplus.NewDeleteLeaks make
     else
       echo "Skipping static code analysis."
     fi

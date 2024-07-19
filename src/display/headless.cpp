@@ -92,7 +92,6 @@ void Headless::run()
         if(signalStatus == SIGINT)
         {
             config->GetTracer()->SetRunState(TRACER_SUSPENDED);
-            running = false;
             break;
         }
 

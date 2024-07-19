@@ -188,8 +188,6 @@ void Screen::run()
 
                     // update footer
                     drawFilterPrompt(filter);
-
-                    prevInput = input;
                 }
                 else
                 {
@@ -263,8 +261,6 @@ void Screen::run()
 
                     // update footer
                     drawSearchPrompt(filter, false);
-
-                    prevInput = input;
                 }
                 else
                 {

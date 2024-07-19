@@ -125,7 +125,7 @@ void Column::resetColumn()
 void Column::clearColumn()
 {
     // clear window
-    int ret = werase(this->win);
+    werase(this->win);
 
     // redraw header
     if(highlight) columnPrintFill(HIGHLIGHT_COLOR, 0, 0, (columnName + ":").c_str());
