@@ -29,7 +29,8 @@ sudo apt upgrade -y \
         dirmngr \
         libjson-glib-dev \
         libc6-dev-i386 \
-        libssl-dev
+        libssl-dev \
+        gettext
 
 # install debbuild
 wget https://github.com/debbuild/debbuild/releases/download/19.5.0/debbuild_19.5.0-ascherer.ubuntu18.04_all.deb \
