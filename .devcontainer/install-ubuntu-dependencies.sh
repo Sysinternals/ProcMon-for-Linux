@@ -31,7 +31,8 @@ sudo apt upgrade -y \
         libc6-dev-i386 \
         libssl-dev \
         gettext \
-        libbpf-dev
+        libbpf-dev \
+        clang-tools
 
 sudo wget https://raw.githubusercontent.com/torvalds/linux/master/include/uapi/linux/openat2.h -O /usr/include/linux/openat2.h
 
